@@ -68,6 +68,30 @@ test("UCI line parser reads the sample and detects millisecond timestamps", () =
   assert.equal(trace[0].y, -204);
 });
 
+test("the seed 24 Nov day still flags 14:40 with the 16:30 second dose window", () => {
+  const v = assessDay(summariesForDay("2026-11-24"), "08:00", 1.5, "16:30");
+  assert.equal(v.wearingOffClock, "14:40");
+  assert.equal(v.minutesAfterDose, 400);
+  assert.equal(assessDay(summariesForDay("2026-11-23"), "08:00", 1.5, "16:30").wearingOffClock, "15:10");
+});
+
+test("readings after nextDoseClock do not count toward the verdict", () => {
+  const day = [
+    { id: "a", clock: "09:00", amplitudeMm: 0.4 },
+    { id: "b", clock: "10:00", amplitudeMm: 0.4 },
+    { id: "c", clock: "12:00", amplitudeMm: 0.45 },
+    { id: "d", clock: "13:10", amplitudeMm: 1.2 },
+    { id: "e", clock: "14:00", amplitudeMm: 1.4 },
+  ];
+  // without a second dose the 13:10 reading crosses 1.5x baseline
+  assert.equal(assessDay(day, "08:00").wearingOffClock, "13:10");
+  // a second dose at 13:00 closes the window, so 13:10 and 14:00 are ignored
+  const v = assessDay(day, "08:00", 1.5, "13:00");
+  assert.equal(v.wearingOffClock, null);
+  assert.equal(v.wearingOffId, null);
+  assert.deepEqual(v.baselineIds, ["a", "b"]);
+});
+
 test("ModelWeightsSchema accepts the provisional fixture", () => {
   assert.equal(ModelWeightsSchema.safeParse(provisionalJson).success, true);
 });

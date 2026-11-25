@@ -6,7 +6,11 @@ import { getAdapter } from "@/lib/adapter";
 
 export const metadata: Metadata = { title: "Dose day" };
 
-export default function ActivityPage() {
+type Props = { searchParams: Promise<{ day?: string | string[] }> };
+
+export default async function ActivityPage({ searchParams }: Props) {
+  const { day: dayParam } = await searchParams;
+  const requested = typeof dayParam === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dayParam) ? dayParam : undefined;
   const adapter = getAdapter();
   const days: TimelineDay[] = adapter.listDays().map((d) => ({
     ...d,
@@ -30,7 +34,7 @@ export default function ActivityPage() {
         </p>
       </header>
 
-      <DoseTimeline days={days} />
+      <DoseTimeline days={days} initialDay={requested ?? days[0]?.day} />
 
       <Card className="overflow-hidden print:hidden">
         <div className="grid items-center md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">

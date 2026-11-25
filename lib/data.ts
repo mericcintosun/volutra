@@ -71,11 +71,18 @@ export function analysisForTest(test: SpiralTest): SpiralAnalysis | null {
 /**
  * Personal baseline = mean amplitude of the first two spirals drawn at least 30 minutes
  * after the dose. The first later spiral at or above baseline x 1.5 marks wearing-off.
+ * With a next dose clock, the window is [dose + 30, nextDose): the second dose restarts the
+ * baseline, so readings after it never count toward this dose's verdict.
  */
-export function assessDay(points: DayPoint[], doseClock: string, ratio = WEARING_OFF_RATIO): DayVerdict {
+export function assessDay(points: DayPoint[], doseClock: string, ratio = WEARING_OFF_RATIO, nextDoseClock?: string): DayVerdict {
   const dose = clockToMinutes(doseClock);
+  const next = nextDoseClock && /^\d{2}:\d{2}$/.test(nextDoseClock) ? clockToMinutes(nextDoseClock) : null;
+  const windowEnd = next !== null && next > dose ? next : Infinity;
   const after = [...points]
-    .filter((p) => clockToMinutes(p.clock) >= dose + 30)
+    .filter((p) => {
+      const m = clockToMinutes(p.clock);
+      return m >= dose + 30 && m < windowEnd;
+    })
     .sort((a, b) => clockToMinutes(a.clock) - clockToMinutes(b.clock));
   const empty: DayVerdict = { baselineMm: null, thresholdMm: null, baselineIds: [], wearingOffClock: null, wearingOffId: null, minutesAfterDose: null };
   if (after.length < 2) return empty;
@@ -138,7 +145,7 @@ export function createDiary(tests: SpiralTest[]): Diary {
       .map(rawSummary)
       .sort((a, b) => clockToMinutes(a.clock) - clockToMinutes(b.clock));
     if (!dd) return raws.map((r) => ({ ...r, status: "replay" as const }));
-    const verdict = assessDay(raws, dd.doseClock);
+    const verdict = assessDay(raws, dd.doseClock, WEARING_OFF_RATIO, dd.nextDoseClock || undefined);
     return raws.map((r) => ({ ...r, status: statusFor(r, verdict) }));
   };
 

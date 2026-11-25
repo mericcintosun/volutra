@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Download, Printer } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Download, Printer, Trash2 } from "lucide-react";
+import { EmptyState } from "@/components/route-states";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +20,18 @@ import {
   type DayVerdict,
   type SpiralStatus,
 } from "@/lib/data";
-import { readDoseClocks, readLocalTests, writeDoseClock } from "@/lib/local-diary";
+import { clearDeviceDiary, readDoseClocks, readLocalTests, writeDoseClock } from "@/lib/local-diary";
+
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "Your device, Wed 25 Nov" from "2026-11-25", built in code so it never depends on the browser locale. */
+export function deviceDayLabel(isoDay: string): string {
+  const [y, m, d] = isoDay.split("-").map(Number);
+  if (!y || !m || !d) return `Your device, ${isoDay}`;
+  const weekday = WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+  return `Your device, ${weekday} ${d} ${MONTHS[m - 1]}`;
+}
 
 export interface TimelineDay {
   day: string;
@@ -98,11 +111,15 @@ function TimelineChart({ points, doseClock, verdict }: { points: TimelineDay["te
 }
 
 /** The dose day: timeline, wearing-off band, history, printout and CSV. */
-export function DoseTimeline({ days }: { days: TimelineDay[] }) {
+export function DoseTimeline({ days, initialDay }: { days: TimelineDay[]; initialDay?: string }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [deviceDays, setDeviceDays] = useState<TimelineDay[]>([]);
   const [doseOverrides, setDoseOverrides] = useState<Record<string, string>>({});
-  const [selected, setSelected] = useState(days[0]?.day ?? "");
+  // the newest seed day (24 Nov) is the demo default; ?day= can point at any listed day
+  const [selected, setSelected] = useState(initialDay ?? days[0]?.day ?? "");
 
+  // the one local-diary effect: device readings and dose overrides from this browser
   useEffect(() => {
     setDoseOverrides(readDoseClocks());
     const local = readLocalTests();
@@ -110,7 +127,7 @@ export function DoseTimeline({ days }: { days: TimelineDay[] }) {
     for (const t of local) {
       const d: TimelineDay = byDay.get(t.day) ?? {
         day: t.day,
-        label: `Your device, ${t.day}`,
+        label: deviceDayLabel(t.day),
         doseClock: "08:00",
         nextDoseClock: "",
         medication: "Your dose",
@@ -120,19 +137,42 @@ export function DoseTimeline({ days }: { days: TimelineDay[] }) {
       d.tests.push({ id: t.id, clock: t.clock, amplitudeMm: t.amplitudeMm, peakHz: t.peakHz, device: "This device", href: null });
       byDay.set(t.day, d);
     }
-    setDeviceDays(Array.from(byDay.values()));
+    // newest device day first; device days are listed after the seed days
+    setDeviceDays(Array.from(byDay.values()).sort((a, b) => (a.day < b.day ? 1 : a.day > b.day ? -1 : 0)));
   }, []);
 
-  const allDays = useMemo(() => [...deviceDays, ...days], [deviceDays, days]);
+  const allDays = useMemo(() => [...days, ...deviceDays], [deviceDays, days]);
   const day = allDays.find((d) => d.day === selected) ?? allDays[0];
   const doseClock = day ? doseOverrides[day.day] ?? day.doseClock : "08:00";
-  const verdict = useMemo(() => (day ? assessDay(day.tests, doseClock) : null), [day, doseClock]);
+  const verdict = useMemo(
+    () => (day ? assessDay(day.tests, doseClock, WEARING_OFF_RATIO, day.nextDoseClock || undefined) : null),
+    [day, doseClock]
+  );
+
+  const selectDay = (value: string) => {
+    setSelected(value);
+    router.replace(`${pathname}?day=${value}`, { scroll: false });
+  };
+
+  const clearDevice = () => {
+    if (!window.confirm("Remove the readings and dose times saved in this browser?")) return;
+    clearDeviceDiary();
+    setDeviceDays([]);
+    setDoseOverrides({});
+    if (!days.some((d) => d.day === selected)) {
+      setSelected(days[0]?.day ?? "");
+      router.replace(pathname, { scroll: false });
+    }
+  };
 
   if (!day || !verdict) {
     return (
-      <Card className="border-dashed">
-        <CardContent className="py-10 text-center text-sm text-muted-foreground">No diary days yet. Draw a spiral to start one.</CardContent>
-      </Card>
+      <EmptyState
+        title="No diary days yet"
+        body="Draw a spiral and save it to start a day. Volutra is a measurement diary, not a diagnostic tool."
+        href="/spirals/new"
+        cta="Draw a spiral"
+      />
     );
   }
 
@@ -173,7 +213,7 @@ export function DoseTimeline({ days }: { days: TimelineDay[] }) {
       <div className="flex flex-col gap-4 print:hidden md:flex-row md:items-end md:justify-between">
         <div role="group" aria-label="Pick a diary day" className="flex flex-wrap gap-2">
           {allDays.map((d) => (
-            <Button key={d.day} variant="segment" size="sm" aria-pressed={d.day === day.day} onClick={() => setSelected(d.day)}>
+            <Button key={d.day} variant="segment" size="sm" aria-pressed={d.day === day.day} onClick={() => selectDay(d.day)}>
               {d.label}
             </Button>
           ))}
@@ -216,9 +256,12 @@ export function DoseTimeline({ days }: { days: TimelineDay[] }) {
         </CardHeader>
         <CardContent className="space-y-3">
           {day.tests.length === 0 ? (
-            <p className="rounded-md border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
-              No readings yet for this day. Draw one from the rail.
-            </p>
+            <EmptyState
+              title="No readings yet for this day"
+              body="Each saved spiral lands here against the time of the dose."
+              href="/spirals/new"
+              cta="Draw a spiral"
+            />
           ) : (
             <div className="overflow-x-auto">
               <TimelineChart points={day.tests} doseClock={doseClock} verdict={verdict} />
@@ -235,7 +278,7 @@ export function DoseTimeline({ days }: { days: TimelineDay[] }) {
           </CardHeader>
           <CardContent>
             {rows.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No readings yet for this day. Draw one from the rail.</p>
+              <p className="text-sm text-muted-foreground">The table fills in as readings are saved for this day.</p>
             ) : (
             <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -292,6 +335,15 @@ export function DoseTimeline({ days }: { days: TimelineDay[] }) {
               Day spans {minutesToClock(clockToMinutes(rows[0]?.clock ?? doseClock))} to{" "}
               {minutesToClock(clockToMinutes(rows[rows.length - 1]?.clock ?? doseClock))}.
             </p>
+            <div className="mt-5 space-y-2 border-t border-border pt-4 print:hidden">
+              <p className="text-xs text-muted-foreground">
+                Your own readings and dose times are kept in this browser only. Nothing leaves the device.
+              </p>
+              <Button variant="outline" size="sm" onClick={clearDevice}>
+                <Trash2 aria-hidden />
+                Clear this device
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

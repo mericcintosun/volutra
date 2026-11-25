@@ -22,7 +22,9 @@ const STATUS_VARIANT ={ baseline: "olive", within: "secondary", past: "bad", rep
 
 /** The line under the pad that says where the points came from, driven by adapter.source. */
 function sourceLineFor(source: DiarySource, test: SpiralTest): string {
-  if (test.source !== "uci") return "Sample data: a synthesized home spiral from the seed diary.";
+  // Home spirals are the example diary by design (there is no upstream to fetch them from), so
+  // this line names what the record is instead of reading like a failed live source.
+  if (test.source !== "uci") return "Example diary: this home spiral is synthesized so the dose day has readings before you draw your own.";
   if (source === "uci-395" && test.recording) {
     return `Real recording: UCI 395 subject file ${test.recording.subjectFile}, Wacom tablet, CC BY 4.0. Amplitude ${test.recording.unitsNote}.`;
   }

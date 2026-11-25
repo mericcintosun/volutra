@@ -1,13 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Eraser, Play, Save } from "lucide-react";
 import { ResultCard } from "@/components/result-card";
 import { SpiralPad } from "@/components/spiral-pad";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { getTest, traceForTest } from "@/lib/data";
 import { saveLocalTest } from "@/lib/local-diary";
 import { analyzeTrace, type SpiralAnalysis, type TracePoint } from "@/lib/tremor";
 
@@ -15,14 +14,15 @@ type Phase = "idle" | "running" | "done" | "short";
 
 interface SpiralSessionProps {
   mode: "capture" | "replay";
-  testId?: string;
+  /** replay only: the recording's points, chosen on the server through the adapter */
+  trace?: TracePoint[];
+  /** replay only: where the points came from (converted UCI 395 file or a stand-in) */
+  sourceLine?: string;
   initial?: SpiralAnalysis | null;
 }
 
 /** The core screen: draw (or replay) a spiral, then read the analysis. */
-export function SpiralSession({ mode, testId, initial = null }: SpiralSessionProps) {
-  const test = testId ? getTest(testId) : undefined;
-  const trace = useMemo(() => (test ? traceForTest(test) : undefined), [test]);
+export function SpiralSession({ mode, trace, sourceLine, initial = null }: SpiralSessionProps) {
   const [analysis, setAnalysis] = useState<SpiralAnalysis | null>(initial);
   const [phase, setPhase] = useState<Phase>(initial ? "done" : "idle");
   const [playToken, setPlayToken] = useState(0);
@@ -81,6 +81,7 @@ export function SpiralSession({ mode, testId, initial = null }: SpiralSessionPro
           <p className="max-w-[44ch] text-sm text-muted-foreground" aria-live="polite">
             {status[phase]}
           </p>
+          {sourceLine && <p className="max-w-[44ch] text-xs text-muted-foreground">{sourceLine}</p>}
         </CardContent>
         <CardFooter className="flex-wrap">
           {mode === "replay" ? (

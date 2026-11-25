@@ -46,6 +46,8 @@ export interface SpiralAnalysis {
 }
 
 export const TREMOR_BAND = { lowHz: 3, highHz: 12 } as const;
+/** Outer radius of the guide spiral in millimetres; UCI recordings are scaled to it. */
+export const GUIDE_MAX_RADIUS_MM = 45;
 const RESAMPLE_HZ = 100;
 const SPECTRUM_MAX_HZ = 15;
 
@@ -78,7 +80,7 @@ function mulberry32(start: number): () => number {
 export function synthesizeTrace(g: SpiralGenerator, seed: string): TracePoint[] {
   const rand = mulberry32(hashSeed(seed));
   const turns = g.turns ?? 3;
-  const maxR = g.maxRadiusMm ?? 45;
+  const maxR = g.maxRadiusMm ?? GUIDE_MAX_RADIUS_MM;
   const a = 2;
   const b = (maxR - a) / (2 * Math.PI * turns);
   const n = Math.round(g.durationS * g.sampleRateHz);

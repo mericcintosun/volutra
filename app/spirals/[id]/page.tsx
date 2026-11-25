@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { SpiralSession } from "@/components/spiral-session";
 import { Badge } from "@/components/ui/badge";
 import { getAdapter } from "@/lib/adapter";
-import { STATUS_LABEL, analysisForTest, formatSinceDose } from "@/lib/data";
+import { STATUS_LABEL, analysisForTest, formatSinceDose, traceForTest } from "@/lib/data";
+import type { DiarySource, SpiralTest } from "@/lib/types";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -16,6 +17,16 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 const STATUS_VARIANT = { baseline: "olive", within: "secondary", past: "bad", replay: "outline" } as const;
+
+/** The line under the pad that says where the points came from, driven by adapter.source. */
+function sourceLineFor(source: DiarySource, test: SpiralTest): string {
+  if (test.source !== "uci") return "Sample data: a synthesized home spiral from the seed diary.";
+  if (source === "uci-395" && test.recording) {
+    return `Real recording: UCI 395 subject file ${test.recording.subjectFile}, Wacom tablet, CC BY 4.0. Amplitude ${test.recording.unitsNote}.`;
+  }
+  if (source === "seed") return "Sample data: a synthesized stand-in shaped like a UCI 395 static spiral.";
+  return "Sample data: the UCI 395 recording has not been converted in this build, so a synthesized stand-in is shown.";
+}
 
 export default async function SpiralPage({ params }: Params) {
   const { id } = await params;
@@ -72,7 +83,7 @@ export default async function SpiralPage({ params }: Params) {
         <p className="max-w-[68ch] text-muted-foreground">{test.note}</p>
       </header>
 
-      <SpiralSession mode="replay" testId={test.id} initial={analysis} />
+      <SpiralSession mode="replay" trace={traceForTest(test)} sourceLine={sourceLineFor(adapter.source, test)} initial={analysis} />
     </div>
   );
 }

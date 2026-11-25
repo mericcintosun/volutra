@@ -169,9 +169,12 @@ export function DoseTimeline({ days, initialDay }: { days: TimelineDay[]; initia
     return (
       <EmptyState
         title="No diary days yet"
-        body="Draw a spiral and save it to start a day. Volutra is a measurement diary, not a diagnostic tool."
-        href="/spirals/new"
-        cta="Draw a spiral"
+        body={
+          <>
+            Use &ldquo;Draw a spiral&rdquo; in the rail and save the reading to start a day. Volutra is a measurement diary, not a
+            diagnostic tool.
+          </>
+        }
       />
     );
   }
@@ -258,9 +261,7 @@ export function DoseTimeline({ days, initialDay }: { days: TimelineDay[]; initia
           {day.tests.length === 0 ? (
             <EmptyState
               title="No readings yet for this day"
-              body="Each saved spiral lands here against the time of the dose."
-              href="/spirals/new"
-              cta="Draw a spiral"
+              body="Each spiral saved from the rail's drawing pad lands here against the time of the dose."
             />
           ) : (
             <div className="overflow-x-auto">

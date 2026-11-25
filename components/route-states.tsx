@@ -31,7 +31,7 @@ export function ErrorState({ title, body, onRetry }: ErrorStateProps) {
     <Card role="alert" className="mx-auto mt-16 max-w-lg border-bad/60">
       <CardContent className="space-y-4 py-12 text-center">
         <p className="font-display text-xl font-semibold">Volutra</p>
-        <h2 className="text-2xl font-semibold">{title}</h2>
+        <h2 className="font-display text-xl font-semibold">{title}</h2>
         <p className="text-sm text-muted-foreground">{body}</p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Button onClick={() => onRetry()}>Try again</Button>
@@ -46,20 +46,23 @@ export function ErrorState({ title, body, onRetry }: ErrorStateProps) {
 
 interface EmptyStateProps {
   title: string;
-  body: string;
-  href: string;
-  cta: string;
+  body: ReactNode;
+  /** optional recovery link (for example "Clear filters"); drawing is always the rail's job */
+  href?: string;
+  cta?: string;
 }
 
-/** Nothing to show yet: a dashed LINE border and one link button. */
+/** Nothing to show yet: a dashed LINE border, one sentence, and at most one recovery link. */
 export function EmptyState({ title, body, href, cta }: EmptyStateProps) {
   return (
     <div className="space-y-3 rounded-md border border-dashed border-border px-6 py-10 text-center">
       <p className="font-display text-lg font-semibold">{title}</p>
       <p className="mx-auto max-w-[52ch] text-sm text-muted-foreground">{body}</p>
-      <Button asChild variant="outline">
-        <Link href={href}>{cta}</Link>
-      </Button>
+      {href && cta && (
+        <Button asChild variant="outline">
+          <Link href={href}>{cta}</Link>
+        </Button>
+      )}
     </div>
   );
 }

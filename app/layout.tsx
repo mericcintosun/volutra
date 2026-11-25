@@ -40,7 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen font-sans antialiased">
         <AppRail />
         <div className="pb-24 md:pb-0 md:pl-60 print:p-0">
-          <main className="mx-auto max-w-6xl px-5 py-8 md:px-10 md:py-10">{children}</main>
+          <main className="mx-auto max-w-6xl px-5 py-6 md:px-10 md:py-10">{children}</main>
         </div>
       </body>
     </html>

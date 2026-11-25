@@ -25,8 +25,8 @@ export default function SpiralsPage() {
   return (
     <div className="space-y-8">
       <header className="volutra-rise space-y-2">
-        <h1 className="text-3xl font-semibold md:text-4xl">Spiral records</h1>
-        <p className="max-w-[68ch] text-muted-foreground">
+        <h1 className="font-display text-3xl font-semibold md:text-4xl">Spiral records</h1>
+        <p className="max-w-[65ch] text-muted-foreground">
           {sourceIntro(adapter.source)} Open any one to replay it at the speed it was drawn and watch the analysis run again.
         </p>
       </header>
@@ -42,12 +42,11 @@ export default function SpiralsPage() {
             width={960}
             height={720}
           />
-          <CardContent className="space-y-2 pt-4 text-sm text-muted-foreground md:pt-5">
+          <CardContent className="pt-4 text-sm text-muted-foreground md:pt-5">
             <p>
-              Home spirals carry a status from that day&apos;s rule: the first two after the dose set the baseline, and anything
-              at 1.5 times baseline or more is past the threshold.
+              Home spirals carry a status from that day&apos;s rule (the first two after the dose set the baseline, 1.5 times
+              that is the line), while the UCI replays sit outside the diary as known examples.
             </p>
-            <p>UCI replays sit outside any dose day. They exist to show what a known Parkinsonian tremor looks like.</p>
           </CardContent>
         </Card>
       </div>

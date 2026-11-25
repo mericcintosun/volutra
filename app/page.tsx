@@ -2,11 +2,40 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/route-states";
 import { TodayCoil } from "@/components/today-coil";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Disclosure, DisclosureContent, DisclosureSummary } from "@/components/ui/disclosure";
 import { getAdapter } from "@/lib/adapter";
 import { DEMO_PERSON, WEARING_OFF_RATIO, assessDay, formatSinceDose } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Overview" };
+
+const REPO_URL = "https://github.com/mericcintosun/volutra";
+const HACKATHON_URL = "https://ml-build-challenge-4.devpost.com/";
+
+/** Visible on every width: phones have no rail paragraph, so the repo link lives here too. */
+function OverviewFooter({ className }: { className?: string }) {
+  return (
+    <footer className={className}>
+      <p className="max-w-[65ch] border-t border-border pt-6 text-sm leading-relaxed text-muted-foreground">
+        {DEMO_PERSON.review}. A measurement diary, not a diagnostic tool, and every reading stays in this browser.{" "}
+        <a href={REPO_URL} target="_blank" rel="noopener noreferrer" className="kiln-underline text-foreground">
+          Source on GitHub
+        </a>
+        , built for the{" "}
+        <a href={HACKATHON_URL} target="_blank" rel="noopener noreferrer" className="kiln-underline text-foreground">
+          ML Empowerment Build Challenge 4.0</a>
+        .
+      </p>
+    </footer>
+  );
+}
+
+const RAIL_HINT = (
+  <>
+    Use &ldquo;Draw a spiral&rdquo; in the rail to take a 20-second reading; after a dose and a few readings, this page shows
+    the hour the dose started wearing off.
+  </>
+);
 
 export default function Overview() {
   const adapter = getAdapter();
@@ -14,19 +43,12 @@ export default function Overview() {
 
   if (!today) {
     return (
-      <div className="space-y-8">
-        <header className="volutra-rise space-y-3">
-          <h1 className="text-3xl font-semibold leading-tight md:text-4xl">Welcome to your spiral diary</h1>
+      <div className="volutra-rise-group space-y-8">
+        <header className="space-y-3">
+          <h1 className="font-display text-3xl font-semibold leading-tight md:text-4xl">Welcome to your spiral diary</h1>
         </header>
-        <Card className="volutra-rise max-w-2xl">
-          <CardContent className="space-y-3 py-8 text-sm leading-relaxed text-muted-foreground">
-            <p>
-              There are no diary days yet. Use &ldquo;Draw a spiral&rdquo; in the rail to take your first 20-second reading.
-              After a dose and a few readings, this page shows the hour the dose started wearing off.
-            </p>
-            <p>Volutra is a measurement diary, not a diagnostic tool. Every reading stays in this browser.</p>
-          </CardContent>
-        </Card>
+        <EmptyState title="There are no diary days yet" body={RAIL_HINT} />
+        <OverviewFooter />
       </div>
     );
   }
@@ -35,17 +57,15 @@ export default function Overview() {
 
   if (tests.length === 0) {
     return (
-      <div className="space-y-8">
-        <header className="volutra-rise space-y-3">
+      <div className="volutra-rise-group space-y-8">
+        <header className="space-y-3">
           <p className="text-sm text-muted-foreground">{today.label}</p>
-          <h1 className="text-3xl font-semibold leading-tight md:text-4xl">No spirals since the {today.doseClock} dose</h1>
+          <h1 className="font-display text-3xl font-semibold leading-tight md:text-4xl">
+            No spirals since the {today.doseClock} dose
+          </h1>
         </header>
-        <EmptyState
-          title="Today has no readings yet"
-          body="Draw a 20-second spiral to put the first reading on today's dose day. Volutra is a measurement diary, not a diagnostic tool."
-          href="/spirals/new"
-          cta="Draw a spiral"
-        />
+        <EmptyState title="Today has no readings yet" body={RAIL_HINT} />
+        <OverviewFooter />
       </div>
     );
   }
@@ -54,112 +74,93 @@ export default function Overview() {
   const flagged = tests.find((t) => t.id === verdict.wearingOffId);
   const yTests = yesterday ? adapter.summariesForDay(yesterday.day) : [];
   const yVerdict = yesterday ? assessDay(yTests, yesterday.doseClock, WEARING_OFF_RATIO, yesterday.nextDoseClock || undefined) : null;
-  const last = tests[tests.length - 1];
 
   return (
-    <div className="space-y-8">
-      <header className="volutra-rise space-y-3">
+    <div className="volutra-rise-group grid items-start gap-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,3fr)]">
+      <header className="space-y-2 lg:col-span-2">
         <p className="text-sm text-muted-foreground">
           {today.label}. {DEMO_PERSON.label}
         </p>
-        <h1 className="text-3xl font-semibold leading-tight md:text-4xl">
+        <h1 className="font-display text-3xl font-semibold leading-tight md:text-4xl">
           {tests.length} spirals since the {today.doseClock} dose
         </h1>
-        <p className="max-w-[68ch] text-muted-foreground">
-          Volutra is a tremor diary for people with Parkinson&apos;s on levodopa, the carers who keep their on/off notes, and
-          the neurologist who adjusts the dose. Every spiral is a 20-second tremor reading, measured in this browser and lined
-          up against the time of the dose, so the afternoon dip stops being a feeling and becomes a time on a chart.
-        </p>
-        <p className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
-          <Link href="/spirals/new" className="kiln-underline">
-            Draw your first spiral
-          </Link>
-          <Link href="/spirals/uci-pwp-sst-07" className="kiln-underline">
-            Replay a real patient&apos;s tablet spiral
-          </Link>
+        <p className="max-w-[65ch] text-muted-foreground">
+          Each spiral is a 20-second tremor reading, measured in this browser against the dose time.{" "}
+          <Link href="/spirals/uci-pwp-sst-07" className="kiln-underline text-foreground">
+            Replay a real patient&apos;s tablet spiral</Link>
+          .
         </p>
       </header>
 
-      <div className="volutra-rise-group grid items-start gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+      <section id="today-coil" aria-labelledby="today-coil-title" className="scroll-mt-20 lg:row-span-2">
         <Card>
-          <CardHeader>
-            <CardTitle>Today&apos;s spirals, as fired clay</CardTitle>
-            <CardDescription>Pick a time to rebuild the coil from that drawing.</CardDescription>
+          <CardHeader className="pb-4 md:pb-4">
+            <h2 id="today-coil-title" className="font-display text-xl font-semibold leading-tight">
+              Today&apos;s spirals, as fired clay
+            </h2>
           </CardHeader>
           <CardContent>
             <TodayCoil tests={tests} thresholdMm={verdict.thresholdMm} />
           </CardContent>
         </Card>
+      </section>
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>What today says</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm leading-relaxed">
-              {verdict.baselineMm !== null && verdict.thresholdMm !== null ? (
-                <p>
-                  Your first two readings after the dose set a baseline of{" "}
-                  <strong className="font-semibold">{verdict.baselineMm.toFixed(2)} mm</strong>. Volutra draws its line at{" "}
-                  {WEARING_OFF_RATIO} times that, {verdict.thresholdMm.toFixed(2)} mm.
-                </p>
-              ) : (
-                <p>Two readings after the dose are needed before a baseline exists.</p>
-              )}
-              {flagged && verdict.minutesAfterDose !== null ? (
-                <p>
-                  At <strong className="font-semibold">{flagged.clock}</strong>, {formatSinceDose(verdict.minutesAfterDose)} after
-                  the dose, the tremor reached {flagged.amplitudeMm.toFixed(2)} mm. That is where the dose started wearing off.
-                  {last && last.id !== flagged.id && ` By ${last.clock} it was ${last.amplitudeMm.toFixed(2)} mm.`}
-                </p>
-              ) : (
-                <p>No reading has crossed the line today.</p>
-              )}
-              {yVerdict && (
-                <p className="text-muted-foreground">
-                  Yesterday the line was crossed at {yVerdict.wearingOffClock ?? "no point"}
-                  {yVerdict.minutesAfterDose !== null && `, ${formatSinceDose(yVerdict.minutesAfterDose)} after the dose`}. Two days
-                  in a row is a pattern worth showing your neurologist.
-                </p>
-              )}
-              <p className="flex flex-wrap gap-x-5 gap-y-2 pt-1">
-                <Link href="/activity" className="kiln-underline">
-                  See the dose day chart
-                </Link>
-                <Link href="/spirals/uci-pwp-sst-07" className="kiln-underline">
-                  Replay a tablet recording
-                </Link>
+      <section id="verdict" aria-labelledby="verdict-title" className="scroll-mt-20">
+        <Card>
+          <CardHeader>
+            <h2 id="verdict-title" className="font-display text-xl font-semibold leading-tight">
+              What today says
+            </h2>
+          </CardHeader>
+          <CardContent className="max-w-[65ch] space-y-4 text-sm leading-relaxed">
+            {verdict.baselineMm !== null && verdict.thresholdMm !== null && flagged && verdict.minutesAfterDose !== null ? (
+              <p>
+                At <strong className="font-semibold">{flagged.clock}</strong>, {formatSinceDose(verdict.minutesAfterDose)} after the
+                dose, the tremor reached <strong className="font-semibold">{flagged.amplitudeMm.toFixed(2)} mm</strong>, past the{" "}
+                {verdict.thresholdMm.toFixed(2)} mm line ({WEARING_OFF_RATIO} times the {verdict.baselineMm.toFixed(2)} mm baseline
+                set by the first two readings), so that is where the dose started wearing off.
               </p>
-            </CardContent>
-          </Card>
+            ) : verdict.baselineMm !== null && verdict.thresholdMm !== null ? (
+              <p>
+                No reading has crossed today&apos;s {verdict.thresholdMm.toFixed(2)} mm line ({WEARING_OFF_RATIO} times the{" "}
+                {verdict.baselineMm.toFixed(2)} mm baseline).
+              </p>
+            ) : (
+              <p>Two readings after the dose are needed before a baseline exists.</p>
+            )}
+            {yVerdict && (
+              <p className="text-muted-foreground">
+                Yesterday the line was crossed at {yVerdict.wearingOffClock ?? "no point"}
+                {yVerdict.minutesAfterDose !== null && `, ${formatSinceDose(yVerdict.minutesAfterDose)} after the dose`}.
+              </p>
+            )}
+            <p>
+              <Link href="/activity" className="kiln-underline">
+                See the dose day chart
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
+      </section>
 
-          <details className="group rounded-lg border border-border bg-card p-5 text-sm md:p-6">
-            <summary className="cursor-pointer font-display text-lg font-semibold marker:text-primary">
-              How a spiral becomes a number
-            </summary>
-            <div className="mt-3 max-w-[68ch] space-y-3 leading-relaxed text-muted-foreground">
-              <p>
-                The pad records each pointer event with its timestamp, including the coalesced events browsers batch between
-                frames. Volutra unwraps the spiral into angle and radius, fits the ideal Archimedes line r = a + bθ, and keeps
-                what is left over: how far the pen strayed from the line, moment by moment.
-              </p>
-              <p>
-                That residual is resampled to 100 Hz, windowed and run through a Fourier transform. The tallest peak between 3
-                and 12 Hz is the tremor frequency. Parkinsonian rest tremor usually sits around 4 to 6 Hz. The energy in that
-                band gives the amplitude in millimetres.
-              </p>
-              <p>
-                A small logistic regression then compares those features with the UCI Parkinson&apos;s spiral dataset. It is a
-                second opinion on the shape of the signal, never a diagnosis.
-              </p>
-            </div>
-          </details>
+      <section id="method" aria-label="How it is measured" className="scroll-mt-20">
+        <Disclosure className="text-sm">
+          <DisclosureSummary>
+            <h2 className="inline font-display text-xl font-semibold leading-tight">How a spiral becomes a number</h2>
+          </DisclosureSummary>
+          <DisclosureContent className="max-w-[65ch] space-y-3 leading-relaxed text-muted-foreground">
+            <p>The same four steps run on every spiral, in this tab:</p>
+            <ol className="list-decimal space-y-1.5 pl-5">
+              <li>Unwrap the drawing into angle and radius around its centre.</li>
+              <li>Fit the ideal Archimedes line r = a + bθ and keep how far the pen strayed from it.</li>
+              <li>Resample that residual to 100 Hz and run an FFT; the tallest peak from 3 to 12 Hz is the tremor.</li>
+              <li>Compare the features with a logistic regression trained on UCI 395 spirals, a second opinion, never a diagnosis.</li>
+            </ol>
+          </DisclosureContent>
+        </Disclosure>
+      </section>
 
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            {DEMO_PERSON.review}. Volutra is a measurement diary, not a diagnostic tool. Every reading stays in this browser.
-          </p>
-        </div>
-      </div>
+      <OverviewFooter className="lg:col-span-2" />
     </div>
   );
 }

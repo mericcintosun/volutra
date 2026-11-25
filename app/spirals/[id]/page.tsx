@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import { SpiralSession } from "@/components/spiral-session";
 import { Badge } from "@/components/ui/badge";
 import { getAdapter } from "@/lib/adapter";
-import { STATUS_LABEL, analysisForTest, formatSinceDose, traceForTest } from "@/lib/data";
-import type { DiarySource, SpiralTest } from "@/lib/types";
+import { STATUS_LABEL, WEARING_OFF_RATIO, analysisForTest, assessDay, formatSinceDose, traceForTest } from "@/lib/data";
+import type { DiaryAdapter, DiarySource, SpiralTest } from "@/lib/types";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -30,6 +30,14 @@ function sourceLineFor(source: DiarySource, test: SpiralTest): string {
   return "Sample data: the UCI 395 recording has not been converted in this build, so a synthesized stand-in is shown.";
 }
 
+/** Today's wearing-off line: the newest seed dose day (Tue 24 Nov) run through assessDay. */
+function todayThresholdMm(adapter: DiaryAdapter): number | null {
+  const [today] = adapter.listDays();
+  if (!today) return null;
+  const verdict = assessDay(adapter.summariesForDay(today.day), today.doseClock, WEARING_OFF_RATIO, today.nextDoseClock || undefined);
+  return verdict.thresholdMm;
+}
+
 export default async function SpiralPage({ params }: Params) {
   const { id } = await params;
 
@@ -37,14 +45,13 @@ export default async function SpiralPage({ params }: Params) {
     return (
       <div className="space-y-8">
         <header className="volutra-rise space-y-2">
-          <h1 className="text-3xl font-semibold md:text-4xl">Draw a spiral</h1>
-          <p className="max-w-[68ch] text-muted-foreground">
-            Sit with your forearm resting, use the hand you write with, and trace the dashed spiral at a comfortable pace. A
-            phone with a finger works. A stylus works better. The whole test takes about 20 seconds.
+          <h1 className="font-display text-3xl font-semibold md:text-4xl">Draw a spiral</h1>
+          <p className="max-w-[65ch] text-muted-foreground">
+            Rest your forearm, use the hand you write with, and trace the dashed spiral for about 20 seconds.
           </p>
         </header>
-        <SpiralSession mode="capture" />
-        <p className="max-w-[68ch] text-xs leading-relaxed text-muted-foreground">
+        <SpiralSession mode="capture" thresholdMm={todayThresholdMm(getAdapter())} />
+        <p className="max-w-[65ch] text-xs leading-relaxed text-muted-foreground">
           Volutra is a measurement diary to share with your neurologist, not a diagnostic tool. Your drawing is analysed in
           this tab and saved only to this browser&apos;s local storage.
         </p>
@@ -76,7 +83,7 @@ export default async function SpiralPage({ params }: Params) {
           </Link>{" "}
           / {day ? day.label : "UCI 395 replay"}
         </p>
-        <h1 className="text-3xl font-semibold md:text-4xl">
+        <h1 className="font-display text-3xl font-semibold md:text-4xl">
           {test.source === "uci" ? `${test.uciGroup} tablet recording` : `Spiral at ${test.clock}`}
         </h1>
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
@@ -89,7 +96,7 @@ export default async function SpiralPage({ params }: Params) {
             </span>
           )}
         </div>
-        <p className="max-w-[68ch] text-muted-foreground">{test.note}</p>
+        <p className="max-w-[65ch] text-muted-foreground">{test.note}</p>
       </header>
 
       <SpiralSession

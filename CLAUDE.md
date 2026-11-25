@@ -16,7 +16,7 @@ npm run seed    # validates and normalizes fixtures/seed-diary.json (idempotent)
 - Next.js 15: `params` in pages, layouts, metadata and route handlers is a Promise. Always `const { id } = await params`.
 - Kit imports (`three`, `@react-three/fiber`, `@react-three/drei`) live only in files that start with `"use client"`.
 - The Canvas loads through `next/dynamic` with `ssr: false`, inside a client component, with the SVG fallback kept working without WebGL. `frameloop="demand"`.
-- `process.env` is not readable in client components for keys without the `NEXT_PUBLIC_` prefix. `ADAPTER_MODE` is read server-side only (`lib/adapter.ts`).
+- `process.env` is not readable in client components for keys without the `NEXT_PUBLIC_` prefix. `ADAPTER_MODE` is read server-side only, in `lib/config.ts`; `lib/adapter.ts` selects the fake or real adapter from it. Tests: `npm test`. Proof run: `npm run proof`.
 - Data flows: `fixtures/seed-diary.json` to `lib/data/seed.ts` to `lib/data.ts` to `lib/adapter.ts`. Pages call `getAdapter()`; they never import diary literals.
 - Tailwind v4: tokens live in `app/globals.css`. No `tailwind.config`. No hex in components.
 

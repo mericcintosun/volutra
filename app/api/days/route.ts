@@ -7,5 +7,5 @@ type DayWithTests = DoseDay & { tests: TestSummary[] };
 export function GET() {
   const adapter = getAdapter();
   const data: DayWithTests[] = adapter.listDays().map((d) => ({ ...d, tests: adapter.summariesForDay(d.day) }));
-  return NextResponse.json<ApiResponse<DayWithTests[]>>({ data, mode: adapter.mode, source: "seed" }, { status: 200 });
+  return NextResponse.json<ApiResponse<DayWithTests[]>>({ data, mode: adapter.mode, source: adapter.source }, { status: 200 });
 }

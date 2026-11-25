@@ -1,13 +1,15 @@
+import { cachedAnalysis } from "./cache";
 import { SEED_DOSE_DAYS, SEED_PERSON, SEED_TESTS } from "./data/seed";
-import { analyzeTrace, synthesizeTrace, type SpiralAnalysis, type TracePoint } from "./tremor";
+import { synthesizeTrace, type SpiralAnalysis, type TracePoint } from "./tremor";
 import type { DayPoint, DayVerdict, DiaryPerson, DoseDay, SpiralStatus, SpiralTest, TestSummary } from "./types";
 
 // Seeded demo diary: two days of home spirals after a 08:00 levodopa dose, plus two
 // stand-ins shaped like UCI 395 static spiral tests (one Parkinson's, one control).
 // The values live in fixtures/seed-diary.json; this module keeps the public names and
-// the pure helpers. Traces are synthesized from each record's generator so every number
-// on screen comes out of the real analysis pipeline. Phase 2 swaps the two "uci" records
-// for converted UCI recordings through the real adapter (lib/adapter.ts).
+// the pure helpers. A record without a converted recording is synthesized from its
+// generator, so every number on screen comes out of the real analysis pipeline.
+// createDiary() builds the same helpers over any list of records: the real adapter
+// (lib/adapter-real.ts) calls it with the two UCI records swapped for converted files.
 
 export type { DayPoint, DayVerdict, DoseDay, SpiralSource, SpiralStatus, SpiralTest, TestSummary } from "./types";
 
@@ -42,23 +44,26 @@ export function formatSinceDose(mins: number): string {
 
 /* ---------- lookups and analysis ---------- */
 
-export function getTest(id: string): SpiralTest | undefined {
-  return SPIRAL_TESTS.find((t) => t.id === id);
-}
-
 export function getDoseDay(day: string): DoseDay | undefined {
   return DOSE_DAYS.find((d) => d.day === day);
 }
 
+// keyed by record object: the fake and real diaries hold different objects for the same id
+const synthesized = new WeakMap<SpiralTest, TracePoint[]>();
+
+/** The converted recording when the record has one, otherwise the synthesized trace. */
 export function traceForTest(test: SpiralTest): TracePoint[] {
-  return synthesizeTrace(test.generator, test.id);
+  if (test.recording) return test.recording.points;
+  let trace = synthesized.get(test);
+  if (!trace) {
+    trace = synthesizeTrace(test.generator, test.id);
+    synthesized.set(test, trace);
+  }
+  return trace;
 }
 
-const analysisCache = new Map<string, SpiralAnalysis | null>();
-
 export function analysisForTest(test: SpiralTest): SpiralAnalysis | null {
-  if (!analysisCache.has(test.id)) analysisCache.set(test.id, analyzeTrace(traceForTest(test)));
-  return analysisCache.get(test.id) ?? null;
+  return cachedAnalysis(traceForTest(test));
 }
 
 /* ---------- wearing-off rule ---------- */
@@ -109,31 +114,51 @@ function rawSummary(test: SpiralTest): Omit<TestSummary, "status"> {
   };
 }
 
-export function summariesForDay(day: string): TestSummary[] {
-  const dd = getDoseDay(day);
-  const raws = SPIRAL_TESTS.filter((t) => t.day === day)
-    .map(rawSummary)
-    .sort((a, b) => clockToMinutes(a.clock) - clockToMinutes(b.clock));
-  if (!dd) return raws.map((r) => ({ ...r, status: "replay" as const }));
-  const verdict = assessDay(raws, dd.doseClock);
-  return raws.map((r) => ({ ...r, status: statusFor(r, verdict) }));
-}
-
 export function statusFor(p: { id: string; amplitudeMm: number }, v: DayVerdict): SpiralStatus {
   if (v.baselineIds.includes(p.id)) return "baseline";
   if (v.thresholdMm !== null && p.amplitudeMm >= v.thresholdMm) return "past";
   return "within";
 }
 
-export function allSummaries(): TestSummary[] {
-  const home = DOSE_DAYS.flatMap((d) => summariesForDay(d.day));
-  const uci = SPIRAL_TESTS.filter((t) => t.source === "uci").map((t) => ({ ...rawSummary(t), status: "replay" as const }));
-  return [...home, ...uci];
+export interface Diary {
+  getTest(id: string): SpiralTest | undefined;
+  allSummaries(): TestSummary[];
+  summaryFor(id: string): TestSummary | undefined;
+  summariesForDay(day: string): TestSummary[];
 }
 
-export function summaryFor(id: string): TestSummary | undefined {
-  return allSummaries().find((s) => s.id === id);
+/** The lookup and summary helpers over one list of records. */
+export function createDiary(tests: SpiralTest[]): Diary {
+  const getTest = (id: string) => tests.find((t) => t.id === id);
+
+  const summariesForDay = (day: string): TestSummary[] => {
+    const dd = getDoseDay(day);
+    const raws = tests
+      .filter((t) => t.day === day)
+      .map(rawSummary)
+      .sort((a, b) => clockToMinutes(a.clock) - clockToMinutes(b.clock));
+    if (!dd) return raws.map((r) => ({ ...r, status: "replay" as const }));
+    const verdict = assessDay(raws, dd.doseClock);
+    return raws.map((r) => ({ ...r, status: statusFor(r, verdict) }));
+  };
+
+  const allSummaries = (): TestSummary[] => {
+    const home = DOSE_DAYS.flatMap((d) => summariesForDay(d.day));
+    const uci = tests.filter((t) => t.source === "uci").map((t) => ({ ...rawSummary(t), status: "replay" as const }));
+    return [...home, ...uci];
+  };
+
+  const summaryFor = (id: string) => allSummaries().find((s) => s.id === id);
+
+  return { getTest, allSummaries, summaryFor, summariesForDay };
 }
+
+const seedDiary = createDiary(SPIRAL_TESTS);
+
+export const getTest = seedDiary.getTest;
+export const summariesForDay = seedDiary.summariesForDay;
+export const allSummaries = seedDiary.allSummaries;
+export const summaryFor = seedDiary.summaryFor;
 
 export const STATUS_LABEL: Record<SpiralStatus, string> = {
   baseline: "Baseline",

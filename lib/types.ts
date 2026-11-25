@@ -1,4 +1,4 @@
-import type { SpiralGenerator } from "./tremor";
+import type { SpiralGenerator, TracePoint } from "./tremor";
 
 // Shared types for the diary, the adapter seam, the API stubs and the model weights.
 
@@ -17,6 +17,8 @@ export interface SpiralTest {
   note: string;
   uciGroup?: "Parkinson's" | "Control";
   generator: SpiralGenerator;
+  /** A converted recording (UCI 395). When present it replaces the synthesized trace. */
+  recording?: { subjectFile: string; unitsNote: string; points: TracePoint[] };
 }
 
 export interface DoseDay {
@@ -71,18 +73,38 @@ export interface DayVerdict {
   minutesAfterDose: number | null;
 }
 
-/** Shape every API stub returns. */
-export interface ApiResponse<T> {
-  data: T;
-  mode: "fake" | "real";
-  source: string;
+export type AdapterMode = "fake" | "real";
+
+/** Where the two UCI replays come from: seed stand-ins, converted UCI 395 files, or stand-ins because conversion has not run. */
+export type DiarySource = "seed" | "uci-395" | "uci-395-pending";
+
+/** The data seam. Pages and API routes read the diary only through this interface. */
+export interface DiaryAdapter {
+  mode: AdapterMode;
+  source: DiarySource;
+  listSummaries(): TestSummary[];
+  getSummary(id: string): TestSummary | undefined;
+  getTest(id: string): SpiralTest | undefined;
+  listDays(): DoseDay[];
+  summariesForDay(day: string): TestSummary[];
 }
 
-/** Logistic regression weights. Phase 2's training script writes this shape to lib/model-weights.json. */
+/** Shape every API route returns on success. */
+export interface ApiResponse<T> {
+  data: T;
+  mode: AdapterMode;
+  source: DiarySource;
+}
+
+/** Logistic regression weights. scripts/train-model.ts writes this shape to lib/model-weights.json. */
 export interface ModelWeights {
   status: "provisional" | "trained";
   features: { name: string; mean: number; std: number; weight: number }[];
   bias: number;
   balancedAccuracy: number | null;
   folds: number | null;
+  /** subject counts the training run actually found; null until a training run */
+  subjects?: { parkinsons: number; control: number } | null;
+  trainedAt?: string | null;
+  testsUsed?: number | null;
 }

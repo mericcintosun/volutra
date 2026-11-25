@@ -92,6 +92,38 @@ All three sections are in the rail (`components/app-rail.tsx`); the rail's singl
 - Scope discipline: if something threatens the 1 December deadline, cut scope (signature 3, week view) before polishing.
 - `npm run build` must pass after every change.
 
+## Phase 1: seams on the scaffold
+
+### Goal
+Add the seams later phases depend on (DEMO.md, CLAUDE.md, seed fixture, `ADAPTER_MODE` adapter, typed API stubs, loading/empty/error surfaces) without changing any visible behavior.
+
+### Status
+All five slices written. Not built or run: the agent had no shell. `npm run build`, `npm run seed` twice, and the 14:40 / 15:10 flag check are for the runner and the human.
+
+### Decisions
+- **Fixture JSON as the seed source.** `fixtures/seed-diary.json` holds person, dose days and 13 tests with the original generator values (the only change is `5.0` written as `5`, same number). `lib/data/seed.ts` casts it through `SeedDiary`; `lib/data.ts` keeps every public name and the pure helpers, and re-exports the types from `lib/types.ts`.
+- **`ApiResponse<T>`** = `{ data, mode: "fake" | "real", source }`. `/api/spirals` returns `TestSummary[]`, `/api/spirals/[id]` returns `{ test, summary }` or 404 with `data: null`, `/api/days` returns each `DoseDay` with its `tests` summaries. Pages call `getAdapter()` directly and never fetch their own API.
+- **Weights JSON shape for Phase 2.** `ModelWeights` in `lib/types.ts`: `{ status, features: [{ name, mean, std, weight }], bias, balancedAccuracy, folds }`. `lib/model.ts` maps each feature `name` to an extractor (`EXTRACTORS`) and throws on an unknown name, so the training script must keep the three names exactly. The provisional file is `fixtures/model-weights.provisional.json` (first mean is ln(0.3)); Phase 2 writes `lib/model-weights.json` and swaps the import in `lib/model.ts`.
+- `getAdapter()` returns `fakeAdapter` for both modes until Phase 2 adds the real branch.
+- The rail's brand strip is now a `<header>` element (landmark for the mobile top strip); styling unchanged.
+
+### Failed attempts
+None.
+
+### Files changed
+Created: `DEMO.md`, `CLAUDE.md`, `lib/types.ts`, `lib/data/seed.ts`, `lib/adapter.ts`, `fixtures/seed-diary.json`, `fixtures/model-weights.provisional.json`, `scripts/seed.mjs`, `app/api/spirals/route.ts`, `app/api/spirals/[id]/route.ts`, `app/api/days/route.ts`, `app/loading.tsx`, `app/spirals/loading.tsx`, `app/spirals/[id]/loading.tsx`, `app/activity/loading.tsx`.
+Edited: `lib/data.ts`, `lib/model.ts`, `package.json`, `.env.example`, `app/page.tsx`, `app/spirals/page.tsx`, `app/spirals/[id]/page.tsx`, `app/activity/page.tsx`, `app/error.tsx`, `app/not-found.tsx`, `components/spiral-index.tsx`, `components/dose-timeline.tsx`, `components/result-card.tsx`, `components/app-rail.tsx`, `HANDOFF.md`.
+
+### Commands run
+None, agent has no shell.
+
+### Open questions
+- `CLAUDE.md` must list the banned words, so a repo-wide banned-word grep hits that one line by design.
+- `package-lock.json` was already modified before this phase; left untouched.
+
+### Next best step
+Phase 2: download UCI 395, write `scripts/convert-uci.mjs` into `data/uci/*.json`, add the real adapter branch, train the weights into `lib/model-weights.json`, create `npm run proof` and `.farm-live.json`, record the deploy URL here.
+
 ## 5. Definition of done
 
 - Deployed on Vercel at https://volutra.vercel.app and the README demo link works.

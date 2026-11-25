@@ -76,7 +76,9 @@ export function ResultCard({ analysis, origin }: { analysis: SpiralAnalysis; ori
           </p>
         )}
 
-        <SpectrumChart spectrum={analysis.spectrum} peakHz={analysis.peakHz} />
+        <div className="overflow-x-auto">
+          <SpectrumChart spectrum={analysis.spectrum} peakHz={analysis.peakHz} />
+        </div>
 
         <div className="space-y-2 border-t border-border pt-5">
           <div className="flex items-baseline justify-between gap-4 text-sm">

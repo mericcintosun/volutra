@@ -28,12 +28,12 @@ export function AppRail() {
   const pathname = usePathname();
   return (
     <aside className="sticky top-0 z-40 border-b border-border bg-background md:fixed md:inset-y-0 md:left-0 md:w-60 md:border-b-0 md:border-r print:hidden">
-      <div className="flex h-14 items-center px-5 md:h-auto md:px-6 md:pt-7">
+      <header className="flex h-14 items-center px-5 md:h-auto md:px-6 md:pt-7">
         <Link href="/" className="flex items-center gap-2.5">
           <BrandMark size={28} />
           <span className="font-display text-xl font-semibold tracking-tight">Volutra</span>
         </Link>
-      </div>
+      </header>
 
       <nav
         aria-label="Sections"

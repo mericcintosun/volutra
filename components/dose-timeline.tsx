@@ -215,7 +215,15 @@ export function DoseTimeline({ days }: { days: TimelineDay[] }) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <TimelineChart points={day.tests} doseClock={doseClock} verdict={verdict} />
+          {day.tests.length === 0 ? (
+            <p className="rounded-md border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
+              No readings yet for this day. Draw one from the rail.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <TimelineChart points={day.tests} doseClock={doseClock} verdict={verdict} />
+            </div>
+          )}
           <p className="text-sm italic text-muted-foreground">&ldquo;{day.diary}&rdquo;</p>
         </CardContent>
       </Card>
@@ -226,6 +234,10 @@ export function DoseTimeline({ days }: { days: TimelineDay[] }) {
             <CardTitle>Readings</CardTitle>
           </CardHeader>
           <CardContent>
+            {rows.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No readings yet for this day. Draw one from the rail.</p>
+            ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="text-xs text-muted-foreground">
                 <tr className="border-b border-border">
@@ -258,6 +270,8 @@ export function DoseTimeline({ days }: { days: TimelineDay[] }) {
                 ))}
               </tbody>
             </table>
+            </div>
+            )}
           </CardContent>
         </Card>
 

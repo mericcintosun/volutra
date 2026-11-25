@@ -67,10 +67,10 @@ export function SpiralIndex({ rows }: { rows: TestSummary[] }) {
       {visible.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="space-y-3 py-10 text-center">
-            <p className="font-display text-lg font-semibold">No spiral matches</p>
+            <p className="font-display text-lg font-semibold">No spirals match this filter</p>
             <p className="text-sm text-muted-foreground">Nothing fits &quot;{query || "these filters"}&quot;.</p>
             <Button variant="outline" size="sm" onClick={reset}>
-              Clear filters
+              Clear filter
             </Button>
           </CardContent>
         </Card>

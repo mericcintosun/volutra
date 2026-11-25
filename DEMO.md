@@ -21,9 +21,10 @@ Reset before recording: run `npm run demo:reset`, then press "Clear this device"
 1. `/` (`app/page.tsx`): today's six seeded spirals since the 08:00 dose, the 3D coil, and the day's verdict in plain sentences.
 2. `/spirals/new` (`app/spirals/[id]/page.tsx`, `id = new`): draw a spiral on the pad, then read the result card: dominant frequency in Hz, amplitude in mm, the spectrum, and points per second.
 3. `/spirals/uci-pwp-sst-07` (`app/spirals/[id]/page.tsx`): press Replay. The tablet recording redraws, the spectrum peak rises near 5 Hz, and the similarity bar appears with its model card status. The line under the pad names the UCI 395 subject file, or says plainly that a stand-in is shown.
-4. `/spirals` (`app/spirals/page.tsx`): filter by day, toggle "Past threshold only", search the notes, then open the control record `uci-ctl-sst-02` to compare.
-5. `/activity` (`app/activity/page.tsx`): the 08:00 dose, the 14:40 wearing-off band, and changing the dose time to watch the baseline, threshold and marks recompute. A spiral saved on `/spirals/new` appears once, on a "Your device" day listed after the two seed days. The 16:30 second dose closes the window, so readings after it do not move the mark.
-6. `/activity` print and CSV (`app/activity/page.tsx`): a one-page A4 printout with the "Not a diagnostic tool" line, and the CSV download.
+4. `/spirals/uci-pwp-sst-07` (`app/spirals/[id]/page.tsx`): after the replay, press "Compare with my last drawing". The spiral drawn in step 2 appears as a flat olive line under the clay peak near 5 Hz; with no drawing on the device, the UCI control recording is drawn and labelled instead.
+5. `/spirals` (`app/spirals/page.tsx`): filter by day, toggle "Past threshold only", search the notes, then open the control record `uci-ctl-sst-02` to compare.
+6. `/activity` (`app/activity/page.tsx`): the 08:00 dose, the 14:40 wearing-off band, and changing the dose time to watch the baseline, threshold and marks recompute. A spiral saved on `/spirals/new` appears once, on a "Your device" day listed after the two seed days. The 16:30 second dose closes the window, so readings after it do not move the mark.
+7. `/activity` print and CSV (`app/activity/page.tsx`): a one-page A4 printout with the "Not a diagnostic tool" line, and the CSV download.
 
 ## Closing
 
@@ -31,7 +32,7 @@ Nothing leaves the device; this page goes to the next appointment.
 
 ## Recording note
 
-The builder records the 90-second video himself on the live URL, following steps 1, 2, 3, 5 and 6.
+The builder records the 90-second video himself on the live URL, following steps 1, 2, 3, 4, 6 and 7.
 
 ## Honest status
 

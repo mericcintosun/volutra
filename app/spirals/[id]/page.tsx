@@ -16,7 +16,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return { title: test ? `Spiral at ${test.clock}` : "Spiral not found" };
 }
 
-const STATUS_VARIANT = { baseline: "olive", within: "secondary", past: "bad", replay: "outline" } as const;
+const CONTROL_COMPARE_ID = "uci-ctl-sst-02";
+
+const STATUS_VARIANT ={ baseline: "olive", within: "secondary", past: "bad", replay: "outline" } as const;
 
 /** The line under the pad that says where the points came from, driven by adapter.source. */
 function sourceLineFor(source: DiarySource, test: SpiralTest): string {
@@ -58,6 +60,13 @@ export default async function SpiralPage({ params }: Params) {
   const day = adapter.listDays().find((d) => d.day === test.day);
   const sinceDose = summary ? summary.minutesSinceDose : null;
 
+  // Parkinson's replays compare against the UCI control recording when this device holds no drawing
+  const controlTest = id.startsWith("uci-pwp-") ? adapter.getTest(CONTROL_COMPARE_ID) : undefined;
+  const control = controlTest ? analysisForTest(controlTest) : null;
+  const fallbackCompare = control
+    ? { spectrum: control.spectrum, peakHz: control.peakHz, label: `UCI control recording ${CONTROL_COMPARE_ID}` }
+    : undefined;
+
   return (
     <div className="space-y-8">
       <header className="volutra-rise space-y-3">
@@ -83,7 +92,13 @@ export default async function SpiralPage({ params }: Params) {
         <p className="max-w-[68ch] text-muted-foreground">{test.note}</p>
       </header>
 
-      <SpiralSession mode="replay" trace={traceForTest(test)} sourceLine={sourceLineFor(adapter.source, test)} initial={analysis} />
+      <SpiralSession
+        mode="replay"
+        trace={traceForTest(test)}
+        sourceLine={sourceLineFor(adapter.source, test)}
+        initial={analysis}
+        fallbackCompare={fallbackCompare}
+      />
     </div>
   );
 }

@@ -1,18 +1,31 @@
 import { CORE_LOG } from "./log";
-import { DoseClocksSchema, LocalTestsSchema, type LocalTest } from "./schemas";
+import { DoseClocksSchema, LastSpectrumSchema, LocalTestsSchema, type LastSpectrum, type LocalTest } from "./schemas";
 import type { SpiralAnalysis } from "./tremor";
 
 // The visitor's own diary lives in localStorage only. Nothing is sent to a server.
 // This file is the single wrapper around localStorage: no other module touches it.
-// Reads are checked with zod; a corrupt store is treated as empty (the step 5 fallback).
+// Reads are checked with zod; a corrupt store is treated as empty (the DEMO step 6 fallback).
+// The one exception: readLastSpectrum throws LastSpectrumUnreadable so the compare view can say so.
 
-export type { LocalTest } from "./schemas";
+export type { LastSpectrum, LocalTest } from "./schemas";
 
 export const LOCAL_DIARY_VERSION = "v1";
 
 const TESTS_KEY = `volutra.local-tests.${LOCAL_DIARY_VERSION}`;
 const DOSE_KEY = `volutra.dose-clock.${LOCAL_DIARY_VERSION}`;
+/** The last drawing's spectrum, written on every capture (Save not required). */
+export const LAST_SPECTRUM_KEY = "volutra:last-spectrum:v1";
+const LAST_SPECTRUM_MAX_HZ = 15;
 const MAX_ENTRIES = 60;
+
+/** The stored last spectrum exists but does not pass LastSpectrumSchema. */
+export class LastSpectrumUnreadable extends Error {
+  readonly code = "last_spectrum_unreadable" as const;
+  constructor() {
+    super("The last drawing stored on this device could not be read.");
+    this.name = "LastSpectrumUnreadable";
+  }
+}
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -92,8 +105,50 @@ export function clearDoseClocks(): void {
   window.localStorage.removeItem(DOSE_KEY);
 }
 
-/** Remove every reading and dose time this browser holds. */
+/**
+ * Keep the spectrum (0 to 15 Hz) of the drawing just analysed. A full or blocked storage
+ * is swallowed so it never breaks the capture.
+ */
+export function writeLastSpectrum(a: SpiralAnalysis): void {
+  if (typeof window === "undefined") return;
+  try {
+    const now = new Date();
+    const entry: LastSpectrum = {
+      clock: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
+      peakHz: a.peakHz,
+      amplitudeMm: a.amplitudeMm,
+      spectrum: a.spectrum
+        .filter((b) => b.hz >= 0 && b.hz <= LAST_SPECTRUM_MAX_HZ)
+        .map((b) => ({ hz: b.hz, mm: b.mm })),
+    };
+    window.localStorage.setItem(LAST_SPECTRUM_KEY, JSON.stringify(entry));
+  } catch {
+    console.warn(`${CORE_LOG} last spectrum not stored`);
+  }
+}
+
+/** The last drawing's spectrum, or null when none is stored. Throws LastSpectrumUnreadable on bad data. */
+export function readLastSpectrum(): LastSpectrum | null {
+  if (typeof window === "undefined") return null;
+  let raw: unknown;
+  try {
+    raw = readJson(LAST_SPECTRUM_KEY);
+  } catch {
+    throw new LastSpectrumUnreadable();
+  }
+  if (raw === undefined) return null;
+  const parsed = LastSpectrumSchema.safeParse(raw);
+  if (!parsed.success) throw new LastSpectrumUnreadable();
+  return parsed.data;
+}
+
+export function clearLastSpectrum(): void {
+  window.localStorage.removeItem(LAST_SPECTRUM_KEY);
+}
+
+/** Remove every reading, dose time and stored spectrum this browser holds. */
 export function clearDeviceDiary(): void {
   clearLocalTests();
   clearDoseClocks();
+  clearLastSpectrum();
 }

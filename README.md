@@ -26,6 +26,7 @@ Nothing is uploaded. All math runs in the tab and the diary lives in `localStora
 
 - **Spiral pad with live analysis.** Dominant frequency, band amplitude, spiral fit and the full spectrum within a second of lifting the pen. A warning appears if the device reports fewer than 30 points per second.
 - **Recording replay.** Any record redraws itself at the speed it was drawn, then the same pipeline runs again on those points.
+- **Compare with your own drawing.** On a replay, one press draws the spectrum of the last spiral drawn on this device as an olive line on the same chart as the recording. With no drawing yet, the UCI control recording is drawn instead and labelled.
 - **Dose day timeline.** Amplitude against clock time, the baseline, the 1.5x threshold, a shaded wearing-off band and an event history. Change the dose time and every mark is recomputed.
 - **3D coil.** Today's spirals rendered as a fired-clay coil (React Three Fiber). Pick a time and the coil rebuilds from that drawing, its tremor exaggerated three times.
 - **Doctor printout and CSV.** Print styles flip the palette to ink on paper.
@@ -52,11 +53,11 @@ Subject-wise 5-fold stratified cross-validation over 61 Parkinson's and 15 contr
 <!-- PROOF:END model-cv -->
 
 <!-- PROOF:BEGIN tests -->
-`npm test` on 2026-11-25: 9 passed, 0 failed.
+`npm test` on 2026-11-25: 10 passed, 0 failed.
 <!-- PROOF:END tests -->
 
 <!-- PROOF:BEGIN latency -->
-`analyzeTrace` on the Parkinson's replay (1810 points): median 1.3 ms over 20 runs in Node on the proof machine.
+`analyzeTrace` on the Parkinson's replay (1810 points): median 1.9 ms over 20 runs in Node on the proof machine.
 <!-- PROOF:END latency -->
 
 <!-- PROOF:BEGIN demo-path -->
@@ -95,6 +96,17 @@ More than ten million people live with Parkinson's. For many of them, dose timin
 
 Volutra is a measurement diary, not a diagnostic tool.
 
+## Prize tracks
+
+This event has no sponsor bounty; one submission enters both ranked tracks automatically.
+
+| Bounty | Prize | Slots | Required tech | Code file | DEMO step |
+| --- | --- | --- | --- | --- | --- |
+| 1st place | For the best project! | 1 | none stated | lib/tremor.ts, lib/model.ts, scripts/train-model.ts | 2, 3, 4 |
+| Top 10 Finalists | For the top 10 finalists - Certificate awarded | 10 | none stated | same as above | 2, 3, 4 |
+
+Submission checklist: `DELIVERY.md`. Security notes: `SECURITY.md`. Source: https://github.com/mericcintosun/volutra
+
 ## Quickstart
 
 ```bash
@@ -107,7 +119,7 @@ npm run proof    # download UCI 395, convert the replays, train, rewrite the pro
 npm run demo:reset  # put the seed diary back to the demo start state and check the real data is in place
 ```
 
-**Storage.** There is no database and no server store. Readings saved from the drawing pad and any dose time you change are kept in this browser's `localStorage`, through one wrapper (`lib/local-diary.ts`) that checks every read with zod and starts empty if the stored data does not parse. Nothing leaves the device.
+**Storage.** There is no database and no server store. Readings saved from the drawing pad and any dose time you change are kept in this browser's `localStorage`, through one wrapper (`lib/local-diary.ts`) that checks every read with zod and starts empty if the stored data does not parse. The spectrum of the last drawing is kept under `volutra:last-spectrum:v1` for the compare view. Nothing leaves the device.
 
 **Reset.** `npm run demo:reset` re-normalizes the seed diary and checks that the converted recordings and trained weights are in place. The browser side is cleared with the "Clear this device" button under the event history on `/activity` (or by opening a private window).
 

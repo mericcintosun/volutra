@@ -9,21 +9,62 @@ const H = 150;
 const PAD = { l: 34, r: 10, t: 10, b: 26 };
 const MAX_HZ = 15;
 
-/** Amplitude spectrum of the radial residual, 0 to 15 Hz, tremor band shaded. */
-export function SpectrumChart({ spectrum, peakHz, className }: { spectrum: SpectrumBin[]; peakHz: number; className?: string }) {
-  const maxMm = Math.max(0.6, ...spectrum.map((b) => b.mm)) * 1.1;
+/** A second spectrum drawn on the same chart: the device's last drawing or the UCI control recording. */
+export interface CompareSeries {
+  spectrum: SpectrumBin[];
+  peakHz: number;
+  /** band amplitude, present for the device drawing */
+  amplitudeMm?: number;
+  label: string;
+}
+
+export type CompareState =
+  | "idle"
+  | "loading"
+  | { kind: "device"; data: CompareSeries }
+  | { kind: "control"; data: CompareSeries }
+  | "empty"
+  | "error";
+
+function pathFor(bins: SpectrumBin[], x: (hz: number) => number, y: (mm: number) => number): string {
+  return bins
+    .filter((b) => b.hz <= MAX_HZ)
+    .map((b, i) => `${i === 0 ? "M" : "L"}${x(b.hz).toFixed(1)} ${y(b.mm).toFixed(1)}`)
+    .join(" ");
+}
+
+/** Amplitude spectrum of the radial residual, 0 to 15 Hz, tremor band shaded. An optional olive comparison line shares the y scale. */
+export function SpectrumChart({
+  spectrum,
+  peakHz,
+  compare,
+  className,
+}: {
+  spectrum: SpectrumBin[];
+  peakHz: number;
+  compare?: { spectrum: SpectrumBin[] };
+  className?: string;
+}) {
+  const maxMm = Math.max(0.6, ...spectrum.map((b) => b.mm), ...(compare ? compare.spectrum.map((b) => b.mm) : [])) * 1.1;
   const x = (hz: number) => PAD.l + (hz / MAX_HZ) * (W - PAD.l - PAD.r);
   const y = (mm: number) => H - PAD.b - (mm / maxMm) * (H - PAD.t - PAD.b);
   const line = spectrum.map((b, i) => `${i === 0 ? "M" : "L"}${x(b.hz).toFixed(1)} ${y(b.mm).toFixed(1)}`).join(" ");
   const area = spectrum.length ? `${line} L${x(spectrum[spectrum.length - 1].hz).toFixed(1)} ${y(0)} L${x(spectrum[0].hz).toFixed(1)} ${y(0)} Z` : "";
+  const compareLine = compare && compare.spectrum.length > 1 ? pathFor(compare.spectrum, x, y) : "";
   const ticks = [0, 3, 6, 9, 12, 15];
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Amplitude spectrum with its peak at ${peakHz.toFixed(1)} hertz`} className={cn("w-full", className)}>
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      role="img"
+      aria-label={`Amplitude spectrum with its peak at ${peakHz.toFixed(1)} hertz${compareLine ? ", with a comparison spectrum drawn as a second line" : ""}`}
+      className={cn("w-full", className)}
+    >
       <rect x={x(TREMOR_BAND.lowHz)} y={PAD.t} width={x(TREMOR_BAND.highHz) - x(TREMOR_BAND.lowHz)} height={H - PAD.t - PAD.b} className="fill-muted" />
       <line x1={PAD.l} x2={W - PAD.r} y1={y(0)} y2={y(0)} className="stroke-border" />
       <path d={area} className="fill-primary/20" />
       <path d={line} fill="none" strokeWidth={2} strokeLinejoin="round" className="stroke-primary" />
-      <line x1={x(peakHz)} x2={x(peakHz)} y1={PAD.t} y2={y(0)} strokeDasharray="4 4" strokeWidth={1.5} className="stroke-second" />
+      {compareLine && <path d={compareLine} fill="none" strokeWidth={2} strokeLinejoin="round" className="stroke-second" />}
+      <line x1={x(peakHz)} x2={x(peakHz)} y1={PAD.t} y2={y(0)} strokeDasharray="4 4" strokeWidth={1.5} strokeOpacity={0.5} className="stroke-foreground" />
       {ticks.map((t) => (
         <text key={t} x={x(t)} y={H - 8} textAnchor="middle" fontSize={10} className="fill-muted-foreground">
           {t} Hz
@@ -49,7 +90,36 @@ function Reading({ label, value, hint }: { label: string; value: string; hint: s
   );
 }
 
-export function ResultCard({ analysis, origin }: { analysis: SpiralAnalysis; origin: string }) {
+/** One sentence per compare state, composed from the numbers. */
+function compareMessage(state: CompareState, analysis: SpiralAnalysis): string | null {
+  if (state === "idle") return null;
+  if (state === "loading") return "Looking for your last drawing on this device.";
+  if (state === "empty") return 'Draw a spiral with "Draw a spiral" in the rail, then come back: it appears here as an olive line.';
+  if (state === "error") return "The last drawing stored on this device could not be read. Draw a new one to compare.";
+  if (state.kind === "control") {
+    return "No drawing on this device yet, so the UCI control recording is shown. Draw one on the pad and it replaces this line.";
+  }
+  const mm = state.data.amplitudeMm ?? 0;
+  return `Your drawing peaks at ${state.data.peakHz.toFixed(1)} Hz with ${mm.toFixed(2)} mm in the band; this recording reaches ${analysis.amplitudeMm.toFixed(2)} mm.`;
+}
+
+function Swatch({ className }: { className: string }) {
+  return <span aria-hidden className={cn("inline-block h-1 w-5 shrink-0 rounded-sm", className)} />;
+}
+
+export function ResultCard({
+  analysis,
+  origin,
+  compare,
+  compareState = "idle",
+}: {
+  analysis: SpiralAnalysis;
+  origin: string;
+  compare?: CompareSeries;
+  compareState?: CompareState;
+}) {
+  const series = compare ?? (typeof compareState === "object" ? compareState.data : undefined);
+  const message = compareMessage(compareState, analysis);
   const sim = patientGroupSimilarity(analysis);
   const pct = Math.round(sim.score * 100);
   const lowRate = analysis.sampleRateHz < 30;
@@ -76,8 +146,29 @@ export function ResultCard({ analysis, origin }: { analysis: SpiralAnalysis; ori
           </p>
         )}
 
-        <div className="overflow-x-auto">
-          <SpectrumChart spectrum={analysis.spectrum} peakHz={analysis.peakHz} />
+        <div className="space-y-3">
+          <div className="overflow-x-auto">
+            <SpectrumChart spectrum={analysis.spectrum} peakHz={analysis.peakHz} compare={series ? { spectrum: series.spectrum } : undefined} />
+          </div>
+          {series && (
+            <ul className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-muted-foreground" aria-label="Chart legend">
+              <li className="flex items-center gap-2">
+                <Swatch className="bg-primary" />
+                This recording
+              </li>
+              <li className="flex min-w-0 items-center gap-2">
+                <Swatch className="bg-second" />
+                <span className="break-all" title={series.label}>
+                  {series.label}
+                </span>
+              </li>
+            </ul>
+          )}
+          {message && (
+            <p className="text-sm text-muted-foreground" aria-live="polite">
+              {message}
+            </p>
+          )}
         </div>
 
         <div className="space-y-2 border-t border-border pt-5">

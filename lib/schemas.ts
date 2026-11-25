@@ -66,6 +66,18 @@ export const LocalTestsSchema = z.array(LocalTestSchema);
 /** Dose clock overrides keyed by diary day, each an HH:MM string. */
 export const DoseClocksSchema = z.record(z.string(), z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/));
 
+/**
+ * The spectrum of the last spiral drawn on this device (0 to 15 Hz bins), kept so a replay
+ * can draw it on the same chart. Field names match SpectrumBin in lib/tremor.ts.
+ */
+export const LastSpectrumSchema = z.object({
+  clock: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  peakHz: z.number().finite(),
+  amplitudeMm: z.number().finite(),
+  spectrum: z.array(z.object({ hz: z.number().finite(), mm: z.number().finite() })).min(2).max(2048),
+});
+
 export type LocalTest = z.infer<typeof LocalTestSchema>;
+export type LastSpectrum = z.infer<typeof LastSpectrumSchema>;
 export type UciRecording = z.infer<typeof UciRecordingSchema>;
 export type UciManifest = z.infer<typeof UciManifestSchema>;

@@ -178,7 +178,7 @@ Dose timeline polish: a second dose restarts the baseline, local "Your device" d
 ## Phase 3: demo path on real data with a hardened device diary
 
 ### Goal
-Every DEMO.md step runs on the real adapter with a fallback in the same file. Step 5 moves forward: a saved drawing lands once on a labelled "Your device" day, a second dose closes the first dose's window, the seeded 24 Nov day with its 14:40 band stays the default, and "Clear this device" plus `npm run demo:reset` return everything to the demo start state.
+Every DEMO.md step runs on the real adapter with a fallback in the same file. Step 5 (step 6 since Phase 4) moves forward: a saved drawing lands once on a labelled "Your device" day, a second dose closes the first dose's window, the seeded 24 Nov day with its 14:40 band stays the default, and "Clear this device" plus `npm run demo:reset` return everything to the demo start state.
 
 ### Status
 All five slices written; nothing cut. Not built or run: the agent had no shell, so `npm run build`, `npm test`, `npm run proof` and `npm run demo:reset` are unverified and belong to the runner. Still on fixtures: the 11 home spirals and both dose days (`fixtures/seed-diary.json`, 13 tests, 2 dose days, unchanged).
@@ -215,6 +215,64 @@ None, agent has no shell.
 
 ### Next best step (Phase 4)
 Run `npm run build`, `npm test` and `npm run proof`, confirm the `demo-path` block reads 14:40 (400 min) and 15:10, then walk DEMO.md on the live URL in a private window three times after `npm run demo:reset`. Then the printout check (one A4 page) and the wow-moment rehearsal before kit signatures 2 and 3 in Phase 5.
+
+## Phase 4: spectrum comparison, prize-track docs, mobile polish, security pass
+
+### Goal
+Put the second half of the wow moment on screen (DEMO step 4: "Compare with my last drawing" draws the presenter's spectrum as an olive line on the UCI Parkinson's chart), document the prize tracks, make every demo control 44px, add OG and Twitter meta and a short intro on `/`, then run the web security pass and write `SECURITY.md`.
+
+### Status
+- **A1 touch targets and overflow: done.** `components/ui/button.tsx:24,28` default `h-11`, icon `h-11 w-11`; `components/ui/input.tsx:10` `h-11`. Every `size="sm"` on the demo path removed (day buttons and "Clear this device" in `dose-timeline.tsx`, filter buttons in `spiral-index.tsx`, coil time buttons in `today-coil.tsx`, the empty-state CTA in `route-states.tsx`). Rail section links carry `min-h-11 min-w-11`; the bottom bar (`fixed inset-x-0 bottom-0 ... md:static`) still holds Overview, Spirals, Dose day and "Draw a spiral". Overflow: the timeline SVG (`dose-timeline.tsx:266`), the readings table (`:283`) and the spectrum SVG (`result-card.tsx`) were already under `overflow-x-auto`. Long strings: the UCI source line got `break-all` (below sm) plus `title`, the list note `truncate` plus `title`, the compare legend label `break-all` plus `title`. The CSV file name is never displayed and record ids are not printed on the detail page. Error and not-found pages render inside the layout (only `app/layout.tsx` uses `min-h-screen`).
+- **A2 compare: done.** `LastSpectrumSchema` (`lib/schemas.ts`), `writeLastSpectrum`, `readLastSpectrum`, `LastSpectrumUnreadable`, `LAST_SPECTRUM_KEY` (`lib/local-diary.ts`). The session writes the spectrum on every capture (before Save), and the replay footer has "Compare with my last drawing" (outline, default size, enabled when `phase === "done"`; a second press hides it). The detail page passes `fallbackCompare` for `uci-pwp-*` ids. All five microcopy states are in `components/result-card.tsx` (`compareMessage`). DEMO.md steps now run 1 to 7. New test in `tests/core.test.ts`.
+- **A3 prize docs: done.** README "Prize tracks" after "Social impact"; `DELIVERY.md` created.
+- **A4 meta and intro: done.** `SITE_URL` in `lib/config.ts`; `app/layout.tsx` has `metadataBase`, title default "Volutra: a spiral that times wearing-off", template "%s | Volutra", description of 125 characters, `openGraph`, `twitter.card: "summary_large_image"`. Intro sentence plus two `kiln-underline` links in the `/` header.
+- **B0: done (no commit).** Contract front skipped: no `contracts/` directory; Volutra has no chain. Wallet front verified vacuously: grep `eth_requestAccounts|personal_sign|eth_sign|wagmi|ethers|viem|connect\(` over `app`, `components`, `lib` returned zero matches.
+- **B1: done.** See the sweep results below. Added "Source on GitHub" to the rail's bottom paragraph with `target="_blank" rel="noopener noreferrer"`.
+- **B2: done.** `SECURITY.md` with the four sections.
+
+### B1 sweep results
+- Secrets: grep `sk-|PRIVATE_KEY|[0-9a-fA-F]{64}|api[_-]?key` (case-insensitive) over `app components lib public`: zero matches. The only `NEXT_PUBLIC_` key is `NEXT_PUBLIC_BRAND_FILES` (a list of public image names, set in `next.config.ts:17`).
+- External links: the only `target="_blank"` is the new rail link, and it carries `rel="noopener noreferrer"`.
+- Mixed content: the only `http://` in `app components lib` is the SVG namespace in `app/icon.svg:1` (allowed).
+- Forms: no `<form>` and no `action=` in `app components lib`. The `/spirals` search writes the URL with `router.replace`, the dose time writes `localStorage`, and the CSV is a Blob plus `URL.createObjectURL` download (`dose-timeline.tsx`, `downloadCsv`).
+- Console: zero `console.` calls in `app` or `components`. The `lib` calls all carry the `CORE_LOG` prefix (`lib/adapter.ts`, `lib/adapter-real.ts`, `lib/local-diary.ts`, `lib/model.ts`).
+- Found but unfixed: none of severity above low. Low: `lib/adapter-real.ts:45,56` use `console.log` (server-side, prefixed, counts only); shortest fix is `console.info`, which is not worth churn. No Blockaid warning is expected because no wallet code exists.
+
+### Decisions
+- **New key `volutra:last-spectrum:v1`** (pre-approved). The spec fixed this colon-separated name; the older keys use dots (`volutra.local-tests.v1`, `volutra.dose-clock.v1`). Both forms are listed in `SECURITY.md`. Only bins from 0 to 15 Hz are stored (about 150 bins). `LocalTestSchema` and `LOCAL_DIARY_VERSION` are unchanged. `clearDeviceDiary()` now also removes the new key.
+- **Read errors.** `readLastSpectrum` throws `LastSpectrumUnreadable` on bad JSON or a zod failure (unlike the other readers, which fall back to empty), so the compare view can show its error line. Writes are wrapped in try/catch so blocked storage never breaks capture.
+- **Control fallback.** For `uci-pwp-*` ids the server analyses `uci-ctl-sst-02` through the same adapter and passes `fallbackCompare` with the label "UCI control recording uci-ctl-sst-02". Other records get no fallback, so they show the "empty" line.
+- **Loading state.** The storage read runs in a `setTimeout(0)` after setting `"loading"` so the loading line can paint; on most devices it is shown for one frame only.
+- **Peak marker** is now `stroke-foreground` at `strokeOpacity={0.5}`; olive means "the comparison line" only on that chart.
+- **`SITE_URL`** is a literal `https://volutra.vercel.app` in `lib/config.ts`, imported by `app/layout.tsx` (server). No env key added.
+- **Twitter image.** There is no `app/twitter-image.tsx`; crawlers fall back to `og:image`. If the runner's view-source shows no `twitter:image`, the shortest fix is a `twitter-image.tsx` that re-exports the OG image, but that file is new and was not added in this phase.
+- **Dropped row.** Adaption credits for everyone, expectedValueUsd null. Not a judged track, and the only real path needs a hosted API key the build cannot hold. Restore path: claim credits by hand; no code change.
+- **OG image check (read only).** `app/opengraph-image.tsx` renders "Volutra" and the claim at 1200x630 using IDENTITY hexes (GROUND, SURFACE, LINE, INK, ACCENT, SECOND). It renders in the default `ImageResponse` font, not Zilla Slab, and its `alt` still uses the older title. Both left alone because the file is fenced.
+
+### Failed attempts
+None.
+
+### Files changed
+Created: `DELIVERY.md`, `SECURITY.md`, `.farm-commits.json`.
+Edited: `components/ui/button.tsx`, `components/ui/input.tsx`, `components/app-rail.tsx`, `components/dose-timeline.tsx`, `components/spiral-index.tsx`, `components/today-coil.tsx`, `components/route-states.tsx`, `components/spiral-session.tsx`, `components/result-card.tsx`, `app/spirals/[id]/page.tsx`, `app/layout.tsx`, `app/page.tsx`, `lib/schemas.ts`, `lib/local-diary.ts`, `lib/config.ts`, `tests/core.test.ts`, `scripts/proof.ts` (comment only, step 5 to step 6), `DEMO.md`, `README.md`, `HANDOFF.md`.
+
+### Commands run
+None, agent has no shell.
+
+### Acceptance gaps and unverified items (honest list)
+- Unverified until the runner: `npm run build`, `npm test` (including the new `LastSpectrumSchema` test), `npm run proof`, and every visual check (360, 768 and 1280 px, print, Lighthouse, live OG image).
+- Hex tripwire: `#[0-9a-fA-F]{6}` also hits `app/opengraph-image.tsx:24-36` and `app/icon.svg:2-4`. Both are pre-existing, fenced or brand files, and use IDENTITY hexes only. Strictly, that is a fail of "any hit outside `app/globals.css`"; not changed because the OG file is fenced and the icon must be a standalone SVG.
+- Banned-word grep also hits `HANDOFF.md:11`, "ML Empowerment Build Challenge 4.0", the event's proper name. Not changed.
+- The rail's "Source on GitHub" link sits in the bottom paragraph, which is `hidden` below md (as before), so on phones the source link is only in README and SECURITY.md.
+- Text links in the `/` intro (`kiln-underline`, text-sm) are not padded to 44px; the spec treats them as text links, not buttons.
+- `break-all` on the source line applies only below the `sm` breakpoint (above it the line wraps at words inside `max-w-[44ch]`), to avoid mid-word breaks on wide screens.
+
+### Open questions
+- Should the compare view also be offered on `/spirals/new` after a capture (comparing with the UCI Parkinson's recording)? Not in scope; it would need a reverse fallback prop.
+- The device spectrum is from a finger or trackpad drawing, while the clay curve is a Wacom recording. The legend labels both; amplitude scales are comparable only roughly (README already says UCI amplitude is approximate millimetres).
+
+### Next best step (Phase 5)
+Frontend pass: kit signatures 2 (the coil reacts to the live capture, which `volutra:last-spectrum:v1` can feed) and 3 (a step-linked camera move), then visual polish from the live screenshots at 360, 768 and 1280 px.
 
 ## 5. Definition of done
 

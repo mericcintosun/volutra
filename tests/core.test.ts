@@ -5,7 +5,7 @@ import { test } from "node:test";
 import provisionalJson from "../fixtures/model-weights.provisional.json";
 import { assessDay, summariesForDay } from "../lib/data";
 import { patientGroupSimilarity } from "../lib/model";
-import { ModelWeightsSchema, SpiralIdSchema } from "../lib/schemas";
+import { LastSpectrumSchema, ModelWeightsSchema, SpiralIdSchema } from "../lib/schemas";
 import { analyzeTrace, synthesizeTrace, type SpiralAnalysis } from "../lib/tremor";
 import { detectTimeUnit, parseUciLines, staticTraceRaw } from "../scripts/convert-uci";
 
@@ -90,6 +90,16 @@ test("readings after nextDoseClock do not count toward the verdict", () => {
   assert.equal(v.wearingOffClock, null);
   assert.equal(v.wearingOffId, null);
   assert.deepEqual(v.baselineIds, ["a", "b"]);
+});
+
+test("LastSpectrumSchema accepts real analysis bins and rejects a NaN", () => {
+  const a = analyzeTrace(synthesizeTrace({ durationS: 15, sampleRateHz: 120, tremorHz: 5, tremorMm: 0.6 }, "test-last-spectrum"));
+  assert.ok(a, "analysis should not be null");
+  const spectrum = a.spectrum.filter((b) => b.hz <= 15).map((b) => ({ hz: b.hz, mm: b.mm }));
+  const entry = { clock: "14:05", peakHz: a.peakHz, amplitudeMm: a.amplitudeMm, spectrum };
+  assert.equal(LastSpectrumSchema.safeParse(entry).success, true);
+  const broken = { ...entry, spectrum: [{ hz: 1, mm: Number.NaN }, ...spectrum.slice(1)] };
+  assert.equal(LastSpectrumSchema.safeParse(broken).success, false);
 });
 
 test("ModelWeightsSchema accepts the provisional fixture", () => {

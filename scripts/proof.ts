@@ -124,7 +124,7 @@ function proveLatency(conv: ConvertResult): void {
   );
 }
 
-/** DEMO step 5: the wearing-off verdict on each seed dose day, with the second dose window. */
+/** DEMO step 6: the wearing-off verdict on each seed dose day, with the second dose window. */
 function proveDemoPath(): void {
   try {
     const parts = DOSE_DAYS.map((d) => {

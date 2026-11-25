@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="640" height="640">
+  <defs>
+    <pattern id="grain4" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(25)">
+      <rect width="6" height="6" fill="#181210"/>
+      <rect width="1" height="6" fill="#221a14"/>
+    </pattern>
+  </defs>
+  <rect width="640" height="640" fill="url(#grain4)"/>
+  <rect x="80" y="80" width="480" height="480" rx="6" fill="#2c211a" stroke="#3d2f25" stroke-width="4"/>
+  <rect x="98" y="98" width="444" height="444" rx="6" fill="#221a14"/>
+  <path d="M300 320 A20 20 0 0 1 340 320 A40 40 0 0 1 260 320 A60 60 0 0 1 380 320 A80 80 0 0 1 220 320 A100 100 0 0 1 420 320 A120 120 0 0 1 180 320 A140 140 0 0 1 460 320" fill="none" stroke="#8a9a5b" stroke-width="8" stroke-linecap="round" stroke-dasharray="2 16"/>
+  <circle cx="300" cy="320" r="11" fill="#8a9a5b"/>
+  <circle cx="300" cy="320" r="20" fill="none" stroke="#8a9a5b" stroke-width="3"/>
+  <g transform="translate(470 470) rotate(-35)">
+    <rect x="-10" y="-150" width="20" height="140" rx="6" fill="#cd7a52"/>
+    <rect x="-10" y="-150" width="20" height="26" rx="6" fill="#3d2f25"/>
+    <path d="M-10 -10 L0 14 L10 -10 Z" fill="#f3ece4"/>
+  </g>
+  <rect x="80" y="584" width="480" height="8" rx="4" fill="#3d2f25"/>
+  <path d="M475 150 A8 8 0 0 1 491 150 A16 16 0 0 1 459 150 A24 24 0 0 1 507 150 A32 32 0 0 1 443 150" fill="none" stroke="#cd7a52" stroke-width="9" stroke-linecap="round"/>
+  <path d="M120 140 h56" stroke="#3d2f25" stroke-width="6" stroke-linecap="round"/>
+  <path d="M120 160 h36" stroke="#3d2f25" stroke-width="6" stroke-linecap="round"/>
+</svg>

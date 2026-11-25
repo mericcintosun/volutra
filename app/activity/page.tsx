@@ -27,10 +27,9 @@ export default async function ActivityPage({ searchParams }: Props) {
   return (
     <div className="space-y-8">
       <header className="volutra-rise space-y-2">
-        <h1 className="text-3xl font-semibold md:text-4xl">Dose day</h1>
-        <p className="max-w-[68ch] text-muted-foreground">
-          Every reading on one clock, with the dose as the starting line. Change the dose time and the baseline, the threshold
-          and the wearing-off mark are recomputed. Print the page or download the CSV for your next appointment.
+        <h1 className="font-display text-3xl font-semibold md:text-4xl">Dose day</h1>
+        <p className="max-w-[65ch] text-muted-foreground">
+          Every reading on one clock with the dose as the starting line; change the dose time and every mark is recomputed.
         </p>
       </header>
 
@@ -45,15 +44,29 @@ export default async function ActivityPage({ searchParams }: Props) {
             height={640}
           />
           <CardContent className="space-y-3 py-6 text-sm leading-relaxed text-muted-foreground md:py-6">
-            <h2 className="text-xl font-semibold text-foreground">Why the dose time matters</h2>
-            <p>
-              Levodopa fades between doses. Neurologists adjust dose timing from paper on/off diaries kept from memory, and a
-              ten-minute clinic visit every three to six months rarely catches the tremor that starts at three in the
-              afternoon at home.
+            <h2 className="font-display text-xl font-semibold text-foreground">Why the dose time matters</h2>
+            <p className="max-w-[65ch]">
+              Dose timing is adjusted from paper diaries kept from memory, and a dated chart with a marked time gives that
+              clinic conversation something to point at.
             </p>
-            <p>A dated chart with a marked time gives that conversation something to point at.</p>
           </CardContent>
         </div>
+      </Card>
+
+      <Card className="overflow-hidden print:hidden">
+        <SceneSlot
+          n={5}
+          alt="A wide clay-brown desk with a printed tremor chart, a fired clay coil and an olive guide line running toward a clinic calendar"
+          width={1200}
+          height={400}
+        />
+        <CardContent className="pt-4 text-sm text-muted-foreground md:pt-5">
+          <h2 className="font-display text-xl font-semibold text-foreground">This page goes to the next appointment</h2>
+          <p className="mt-2 max-w-[65ch]">
+            Press &ldquo;Print for the neurologist&rdquo; at the top of this page for a one-page A4 log; nothing leaves the device
+            until you hand it over.
+          </p>
+        </CardContent>
       </Card>
     </div>
   );

@@ -86,3 +86,5 @@ Rules:
 - every interaction is driven by the real seed data; a decorative animation with no product meaning does not count as a signature
 
 ## Amendments (append-only; later phases add dated lines here, never edit anything above)
+
+- 2026-11-25: Phase 5 adds rail section anchors on the overview (Coil, What today says, How it is measured; md and up, IntersectionObserver, aria-current="location"), two coil camera views ("As drawn" top-down and "Side relief" low oblique, stepped by the session phase with a reduced-motion snap), and scene slots 4 (idle pad on /spirals/new) and 5 (closing panel on /activity). No axis changed.

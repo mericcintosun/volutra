@@ -2,12 +2,13 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
 import { CORE_LOG } from "../lib/config";
+import { DOSE_DAYS, WEARING_OFF_RATIO, assessDay, summariesForDay } from "../lib/data";
 import { UciManifestSchema } from "../lib/schemas";
 import { analyzeTrace, type TracePoint } from "../lib/tremor";
 import { convertUci, type ConvertResult } from "./convert-uci";
 import { trainModel } from "./train-model";
 
-// `npm run proof`: four proofs in order, each printing one stdout line and rewriting its
+// `npm run proof`: five proofs in order (the fifth is the demo-path dose day check), each printing one stdout line and rewriting its
 // own block in README.md (and SUBMISSION.md when it exists). A failing proof writes a
 // "Not run in this build" line and leaves the committed data as it was. Never invents a
 // number. Always exits 0.
@@ -123,12 +124,28 @@ function proveLatency(conv: ConvertResult): void {
   );
 }
 
+/** DEMO step 5: the wearing-off verdict on each seed dose day, with the second dose window. */
+function proveDemoPath(): void {
+  try {
+    const parts = DOSE_DAYS.map((d) => {
+      const v = assessDay(summariesForDay(d.day), d.doseClock, WEARING_OFF_RATIO, d.nextDoseClock || undefined);
+      const shortLabel = d.label.split(" ").slice(1).join(" ") || d.day;
+      if (!v.wearingOffClock || v.minutesAfterDose === null) return `${shortLabel}: no wearing-off marked after the ${d.doseClock} dose`;
+      return `${shortLabel}: wearing-off at ${v.wearingOffClock}, ${v.minutesAfterDose} min after the ${d.doseClock} dose`;
+    });
+    writeBlock("demo-path", `Seed dose days on ${today()}, second dose window applied: ${parts.join("; ")}.`);
+  } catch (err) {
+    writeBlock("demo-path", `Not run in this build: the dose day check stopped (${err instanceof Error ? err.message : "unknown error"}).`);
+  }
+}
+
 async function main(): Promise<void> {
   const started = Date.now();
   const conv = await proveConvert();
   proveModel(conv);
   proveTests();
   proveLatency(conv);
+  proveDemoPath();
   console.log(`${CORE_LOG} proof finished in ${Date.now() - started} ms`);
 }
 

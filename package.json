@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "seed": "node scripts/seed.mjs",
+    "demo:reset": "node scripts/demo-reset.mjs",
     "test": "node --import tsx --test tests/core.test.ts",
     "proof": "tsx scripts/proof.ts",
     "convert:uci": "tsx scripts/convert-uci.ts",

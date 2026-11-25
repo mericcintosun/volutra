@@ -52,16 +52,21 @@ Subject-wise 5-fold stratified cross-validation over 61 Parkinson's and 15 contr
 <!-- PROOF:END model-cv -->
 
 <!-- PROOF:BEGIN tests -->
-`npm test` on 2026-11-25: 7 passed, 0 failed.
+`npm test` on 2026-11-25: 9 passed, 0 failed.
 <!-- PROOF:END tests -->
 
 <!-- PROOF:BEGIN latency -->
-`analyzeTrace` on the Parkinson's replay (1810 points): median 0.9 ms over 20 runs in Node on the proof machine.
+`analyzeTrace` on the Parkinson's replay (1810 points): median 1.3 ms over 20 runs in Node on the proof machine.
 <!-- PROOF:END latency -->
+
+<!-- PROOF:BEGIN demo-path -->
+Seed dose days on 2026-11-25, second dose window applied: 24 Nov: wearing-off at 14:40, 400 min after the 08:00 dose; 23 Nov: wearing-off at 15:10, 430 min after the 08:00 dose.
+<!-- PROOF:END demo-path -->
 
 **Honest status of this build:**
 
-- The two UCI replays and the model weights become real through `npm run proof`. It converts two UCI 395 recordings into `data/uci/manifest.json` and trains `lib/model-weights.json`. Until a proof run has been committed, the replays are synthesized stand-ins and the weights are hand-set, and the UI says so under the pad and on the result card. No accuracy figure is shown anywhere until the training script has measured one.
+- The proof run is committed: `data/uci/manifest.json` holds two converted UCI 395 recordings and `lib/model-weights.json` holds weights trained with subject-wise cross-validation (the figure in the model-cv block above). The live site serves both when `ADAPTER_MODE=real`. With any other mode, or if the real adapter fails to load, the synthesized stand-ins and the seed diary are served instead, and the line under the pad and the `/spirals` header say so.
+- A second dose closes the first dose's window: the baseline and the wearing-off mark only use readings from 30 minutes after the dose up to the next dose.
 - The replay pick is disclosed, not hidden: the Parkinson's replay is the file whose spectrum peak is in 4 to 6 Hz with the highest band amplitude, and the control replay is the control file with the lowest band amplitude. The rule is also written into the manifest's `source` field. These are the clearest examples in the dataset, not typical ones.
 - The 11 home spirals and the two dose days are synthesized from per-record parameters (`fixtures/seed-diary.json`), so every number on screen still comes out of the real pipeline.
 - The model learns from Wacom tablet recordings. Finger and trackpad drawings come from a different distribution, which is why frequency and amplitude stay the primary output.
@@ -99,7 +104,12 @@ npm run dev
 
 npm test         # core pipeline tests (node:test)
 npm run proof    # download UCI 395, convert the replays, train, rewrite the proof blocks above
+npm run demo:reset  # put the seed diary back to the demo start state and check the real data is in place
 ```
+
+**Storage.** There is no database and no server store. Readings saved from the drawing pad and any dose time you change are kept in this browser's `localStorage`, through one wrapper (`lib/local-diary.ts`) that checks every read with zod and starts empty if the stored data does not parse. Nothing leaves the device.
+
+**Reset.** `npm run demo:reset` re-normalizes the seed diary and checks that the converted recordings and trained weights are in place. The browser side is cleared with the "Clear this device" button under the event history on `/activity` (or by opening a private window).
 
 No secret is needed (see `.env.example`). `ADAPTER_MODE=real` serves the converted UCI recordings; anything else serves the seed stand-ins. `npm run build` produces the production bundle that Vercel deploys.
 
@@ -112,7 +122,7 @@ Routes:
 
 ## What we would build next
 
-- Multi-dose days, so the threshold restarts after every dose.
+- A full verdict for the second dose window, with its own baseline and threshold on the same chart.
 - A week view that shows whether the wearing-off hour drifts.
 - Validation against clinician-rated tremor scores before any claim beyond "measurement diary".
 

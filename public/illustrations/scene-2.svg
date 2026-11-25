@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 720" width="960" height="720">
+  <defs>
+    <pattern id="grain2" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(-20)">
+      <rect width="6" height="6" fill="#181210"/>
+      <rect width="1" height="6" fill="#221a14"/>
+    </pattern>
+    <filter id="shake" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="turbulence" baseFrequency="0.06" numOctaves="1" seed="3"/>
+      <feDisplacementMap in="SourceGraphic" scale="22"/>
+    </filter>
+  </defs>
+  <rect width="960" height="720" fill="url(#grain2)"/>
+  <rect x="150" y="50" width="660" height="440" rx="6" fill="#2c211a" stroke="#3d2f25" stroke-width="5"/>
+  <rect x="180" y="78" width="600" height="384" rx="6" fill="#181210"/>
+  <path d="M480 270 A30 30 0 0 1 540 270 A60 60 0 0 1 420 270 A90 90 0 0 1 600 270 A120 120 0 0 1 360 270 A150 150 0 0 1 660 270" fill="none" stroke="#3d2f25" stroke-width="6" stroke-dasharray="2 14" stroke-linecap="round"/>
+  <path d="M480 270 A30 30 0 0 1 540 270 A60 60 0 0 1 420 270 A90 90 0 0 1 600 270 A120 120 0 0 1 360 270" fill="none" stroke="#cd7a52" stroke-width="5" stroke-linecap="round" filter="url(#shake)"/>
+  <g transform="translate(360 270) rotate(-30)">
+    <rect x="-8" y="-170" width="16" height="160" rx="6" fill="#3d2f25"/>
+    <rect x="-8" y="-170" width="16" height="30" rx="6" fill="#8a9a5b"/>
+    <path d="M-8 -10 L0 10 L8 -10 Z" fill="#f3ece4"/>
+  </g>
+  <rect x="150" y="530" width="660" height="150" rx="6" fill="#221a14" stroke="#3d2f25" stroke-width="3"/>
+  <rect x="270" y="548" width="300" height="110" fill="#2c211a"/>
+  <path d="M180 656 L230 654 L270 652 L300 640 L318 600 L330 562 L342 600 L360 640 L400 652 L470 655 L560 656 L680 657 L780 657" fill="none" stroke="#cd7a52" stroke-width="5" stroke-linejoin="round"/>
+  <line x1="330" y1="552" x2="330" y2="658" stroke="#8a9a5b" stroke-width="3" stroke-dasharray="5 5"/>
+  <line x1="180" y1="660" x2="780" y2="660" stroke="#3d2f25" stroke-width="3"/>
+  <circle cx="330" cy="562" r="7" fill="#f3ece4"/>
+</svg>

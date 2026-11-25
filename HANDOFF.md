@@ -169,9 +169,52 @@ None, agent has no shell.
 - Confirm hackathon eligibility (students only) for every team member.
 - Team members and roles for the Devpost form.
 - After the proof run: open `/spirals/uci-pwp-sst-07`, press Replay twice, and check the peak is in 4 to 6 Hz and the numbers match both times.
+- Recorded from the committed proof run: subject-wise CV balanced accuracy 0.661 over 61 Parkinson's and 15 control subjects; replay files `H_p000-0043.txt` (Parkinson's, peak 5.76 Hz) and `C_0002.txt` (control).
+- Clear this device before recording (the button under the event history on `/activity`), after `npm run demo:reset`.
 
 ### Next best step (Phase 3)
 Dose timeline polish: a second dose restarts the baseline, local "Your device" days get a proper label, and the seed day stays the demo default. Before that, read the proof blocks in README and record the measured balanced accuracy and the chosen subject files here.
+
+## Phase 3: demo path on real data with a hardened device diary
+
+### Goal
+Every DEMO.md step runs on the real adapter with a fallback in the same file. Step 5 moves forward: a saved drawing lands once on a labelled "Your device" day, a second dose closes the first dose's window, the seeded 24 Nov day with its 14:40 band stays the default, and "Clear this device" plus `npm run demo:reset` return everything to the demo start state.
+
+### Status
+All five slices written; nothing cut. Not built or run: the agent had no shell, so `npm run build`, `npm test`, `npm run proof` and `npm run demo:reset` are unverified and belong to the runner. Still on fixtures: the 11 home spirals and both dose days (`fixtures/seed-diary.json`, 13 tests, 2 dose days, unchanged).
+
+### Decisions
+- **Store decision table.** Chosen row: "none" on the server, `localStorage` in the browser through the single wrapper `lib/local-diary.ts`. Rejected: Vercel KV and Postgres. Reason: no DEMO step needs data shared across devices or visitors, and "nothing leaves the device" is a product promise in the README, the pad copy and the closing line of the demo. A server store would break that promise and add an env key and a dependency.
+- **Idempotent save.** `saveLocalTestOnce(analysis, key)` with `key = hashTrace(points)` (`lib/cache.ts`). A second press with the same trace returns the stored entry and writes nothing. The 60-entry cap stays. Entries now carry `key`.
+- **Validated reads.** `LocalTestSchema`, `LocalTestsSchema` and `DoseClocksSchema` in `lib/schemas.ts`. A store that fails zod is read as empty and logs `[core] local diary parse failure, starting empty` (via `lib/log.ts`). Consequence: readings saved before this phase have no `key` and fail the schema, so a browser that saved under Phase 2 starts empty once. The key name stayed `v1` (`LOCAL_DIARY_VERSION`) as the spec asks; the old data is not migrated because there is no schema to migrate on the server and the device data is demo data.
+- **Second dose window.** `assessDay(points, doseClock, ratio, nextDoseClock?)` uses `[dose + 30, nextDose)`. Seed check before the change: 24 Nov has no reading at or after 16:30. 23 Nov has one, 17:05 (0.5 mm, after the 16:30 dose), so the spec premise "no seeded reading at or after 16:30" is false for that day. The 15:10 flag still cannot move: the rule takes the first crossing in time, 15:10 comes before 16:30, and the baseline readings (08:55, 10:40) are inside the window. So `assessDay` was not reverted and no seed number was edited. `createDiary`, `app/page.tsx` and `DoseTimeline` all pass `nextDoseClock`; device days pass `""` so the window stays open.
+- **Device days.** Label `Your device, <Wed> <25> <Nov>` built from the ISO day with fixed arrays and `Date.UTC` (no locale). Listed after the seed days, newest first. The default selection is `initialDay` from `?day=` or the first seed day (24 Nov); the empty fallback is still `allDays[0]`.
+- **URL state.** `/activity?day=YYYY-MM-DD` is read in the server page (awaited `searchParams`, regex checked) and written with `router.replace(..., { scroll: false })` from the day picker. `/spirals` filters are `?day=` (a diary day or `uci`), `?past=1`, `?q=`, read with `useSearchParams` under `<Suspense fallback={<SpiralsSkeleton />}>`. The search box is uncontrolled (`defaultValue`) so typing never waits on the router; one effect copies the URL value back into the box only when the box is not focused (Clear filters, back button).
+- **Triad.** `components/route-states.tsx` exports `RouteSkeleton`, `ErrorState`, `EmptyState` (no directive: no hooks, usable from server and client files). The "No spirals match" empty state uses the link `/spirals` as "Clear filters", which drops every param.
+- **Adapter fallback.** `getAdapter()` catches a throw from `getRealAdapter()`, logs `[core] real adapter failed, serving seed` and serves `fakeAdapter`.
+- **Images.** `SceneSlot` and `BrandMark` now render through `next/image`. SVG sources pass `unoptimized`, PNG uploads go through the optimizer. No `next.config.ts` change was needed because every source is local.
+- **demo:reset.** `scripts/demo-reset.mjs` spawns `scripts/seed.mjs` with `execFileSync(process.execPath, [seedPath])`, then exits 1 unless the manifest is `converted` and the weights are `trained`. No migration script: there is no schema. The chain part of the reset checklist is not applicable (plain web app, no wallet, no contracts).
+- **Proof.** `scripts/proof.ts` adds a fifth block, `demo-path`, with the measured verdict per seed dose day. README holds a placeholder line between the markers until the runner's proof run rewrites it.
+
+### Failed attempts
+None. (Nothing could be executed.)
+
+### Files changed
+Created: `components/route-states.tsx`, `app/spirals/error.tsx`, `app/spirals/[id]/error.tsx`, `app/activity/error.tsx`, `scripts/demo-reset.mjs`, `.farm-commits.json`.
+Edited: `lib/local-diary.ts`, `lib/schemas.ts`, `lib/data.ts`, `lib/adapter.ts`, `components/spiral-session.tsx`, `components/dose-timeline.tsx`, `components/spiral-index.tsx`, `components/scene-slot.tsx`, `components/brand-mark.tsx`, `app/page.tsx`, `app/error.tsx`, `app/loading.tsx`, `app/spirals/page.tsx`, `app/spirals/loading.tsx`, `app/spirals/[id]/loading.tsx`, `app/activity/page.tsx`, `app/activity/loading.tsx`, `tests/core.test.ts`, `scripts/proof.ts`, `package.json`, `README.md`, `DEMO.md`, `HANDOFF.md`.
+
+### Commands run
+None, agent has no shell.
+
+### Open questions
+- Does the runner want old Phase 2 device entries (no `key`) migrated instead of dropped? Today they fail zod and the device diary starts empty once. Bumping `LOCAL_DIARY_VERSION` to `v2` would make that explicit; not done because the spec fixes `v1`.
+- `router.replace` on `/activity` refetches the server component (the page reads `searchParams`), one small request per day click. If that is visible on a slow phone, switch the write to `window.history.replaceState`, which Next 15 also syncs.
+- With the `Suspense` boundary, the static HTML of `/spirals` shows the skeleton in place of the list until JavaScript runs. Reading `searchParams` in the page and passing the filters down would make the list server-rendered; left as is because the spec asks for `useSearchParams` under `Suspense`.
+- HANDOFF.md line 91 (section 4, written before this phase) lists banned words on purpose, the same way `CLAUDE.md:40` does, so a banned-word grep over HANDOFF.md hits it.
+- `.farm-commits.json` is under the `.farm-*` ignore rule, as Phase 2 noted.
+
+### Next best step (Phase 4)
+Run `npm run build`, `npm test` and `npm run proof`, confirm the `demo-path` block reads 14:40 (400 min) and 15:10, then walk DEMO.md on the live URL in a private window three times after `npm run demo:reset`. Then the printout check (one A4 page) and the wow-moment rehearsal before kit signatures 2 and 3 in Phase 5.
 
 ## 5. Definition of done
 

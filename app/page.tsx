@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { EmptyState } from "@/components/route-states";
 import { TodayCoil } from "@/components/today-coil";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAdapter } from "@/lib/adapter";
@@ -31,10 +32,28 @@ export default function Overview() {
   }
 
   const tests = adapter.summariesForDay(today.day);
-  const verdict = assessDay(tests, today.doseClock);
+
+  if (tests.length === 0) {
+    return (
+      <div className="space-y-8">
+        <header className="volutra-rise space-y-3">
+          <p className="text-sm text-muted-foreground">{today.label}</p>
+          <h1 className="text-3xl font-semibold leading-tight md:text-4xl">No spirals since the {today.doseClock} dose</h1>
+        </header>
+        <EmptyState
+          title="Today has no readings yet"
+          body="Draw a 20-second spiral to put the first reading on today's dose day. Volutra is a measurement diary, not a diagnostic tool."
+          href="/spirals/new"
+          cta="Draw a spiral"
+        />
+      </div>
+    );
+  }
+
+  const verdict = assessDay(tests, today.doseClock, WEARING_OFF_RATIO, today.nextDoseClock || undefined);
   const flagged = tests.find((t) => t.id === verdict.wearingOffId);
   const yTests = yesterday ? adapter.summariesForDay(yesterday.day) : [];
-  const yVerdict = yesterday ? assessDay(yTests, yesterday.doseClock) : null;
+  const yVerdict = yesterday ? assessDay(yTests, yesterday.doseClock, WEARING_OFF_RATIO, yesterday.nextDoseClock || undefined) : null;
   const last = tests[tests.length - 1];
 
   return (

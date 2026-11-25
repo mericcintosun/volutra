@@ -1,10 +1,8 @@
-export default function SpiralsLoading() {
+import { RouteSkeleton } from "@/components/route-states";
+
+export default function SpiralsSkeleton() {
   return (
-    <div aria-busy="true" className="space-y-8">
-      <div className="space-y-3">
-        <p className="text-sm text-muted-foreground">Loading the spiral records</p>
-        <div className="h-9 w-1/2 rounded-md border border-border bg-card" />
-      </div>
+    <RouteSkeleton label="Loading the spiral records">
       <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="space-y-4">
           <div className="h-9 w-full rounded-md border border-border bg-card" />
@@ -16,6 +14,6 @@ export default function SpiralsLoading() {
         </div>
         <div className="h-72 rounded-md border border-border bg-card" />
       </div>
-    </div>
+    </RouteSkeleton>
   );
 }

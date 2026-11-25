@@ -3,14 +3,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SpiralSession } from "@/components/spiral-session";
 import { Badge } from "@/components/ui/badge";
-import { STATUS_LABEL, analysisForTest, formatSinceDose, getDoseDay, getTest, summaryFor } from "@/lib/data";
+import { getAdapter } from "@/lib/adapter";
+import { STATUS_LABEL, analysisForTest, formatSinceDose } from "@/lib/data";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
   if (id === "new") return { title: "Draw a spiral" };
-  const test = getTest(id);
+  const test = getAdapter().getTest(id);
   return { title: test ? `Spiral at ${test.clock}` : "Spiral not found" };
 }
 
@@ -38,11 +39,12 @@ export default async function SpiralPage({ params }: Params) {
     );
   }
 
-  const test = getTest(id);
+  const adapter = getAdapter();
+  const test = adapter.getTest(id);
   if (!test) notFound();
-  const summary = summaryFor(id);
+  const summary = adapter.getSummary(id);
   const analysis = analysisForTest(test);
-  const day = getDoseDay(test.day);
+  const day = adapter.listDays().find((d) => d.day === test.day);
   const sinceDose = summary ? summary.minutesSinceDose : null;
 
   return (

@@ -1,15 +1,40 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { TodayCoil } from "@/components/today-coil";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DEMO_PERSON, DOSE_DAYS, WEARING_OFF_RATIO, assessDay, formatSinceDose, summariesForDay } from "@/lib/data";
+import { getAdapter } from "@/lib/adapter";
+import { DEMO_PERSON, WEARING_OFF_RATIO, assessDay, formatSinceDose } from "@/lib/data";
+
+export const metadata: Metadata = { title: "Overview" };
 
 export default function Overview() {
-  const [today, yesterday] = DOSE_DAYS;
-  const tests = summariesForDay(today.day);
+  const adapter = getAdapter();
+  const [today, yesterday] = adapter.listDays();
+
+  if (!today) {
+    return (
+      <div className="space-y-8">
+        <header className="volutra-rise space-y-3">
+          <h1 className="text-3xl font-semibold leading-tight md:text-4xl">Welcome to your spiral diary</h1>
+        </header>
+        <Card className="volutra-rise max-w-2xl">
+          <CardContent className="space-y-3 py-8 text-sm leading-relaxed text-muted-foreground">
+            <p>
+              There are no diary days yet. Use &ldquo;Draw a spiral&rdquo; in the rail to take your first 20-second reading.
+              After a dose and a few readings, this page shows the hour the dose started wearing off.
+            </p>
+            <p>Volutra is a measurement diary, not a diagnostic tool. Every reading stays in this browser.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const tests = adapter.summariesForDay(today.day);
   const verdict = assessDay(tests, today.doseClock);
   const flagged = tests.find((t) => t.id === verdict.wearingOffId);
-  const yTests = summariesForDay(yesterday.day);
-  const yVerdict = assessDay(yTests, yesterday.doseClock);
+  const yTests = yesterday ? adapter.summariesForDay(yesterday.day) : [];
+  const yVerdict = yesterday ? assessDay(yTests, yesterday.doseClock) : null;
   const last = tests[tests.length - 1];
 
   return (
@@ -62,11 +87,13 @@ export default function Overview() {
               ) : (
                 <p>No reading has crossed the line today.</p>
               )}
-              <p className="text-muted-foreground">
-                Yesterday the line was crossed at {yVerdict.wearingOffClock ?? "no point"}
-                {yVerdict.minutesAfterDose !== null && `, ${formatSinceDose(yVerdict.minutesAfterDose)} after the dose`}. Two days in
-                a row is a pattern worth showing your neurologist.
-              </p>
+              {yVerdict && (
+                <p className="text-muted-foreground">
+                  Yesterday the line was crossed at {yVerdict.wearingOffClock ?? "no point"}
+                  {yVerdict.minutesAfterDose !== null && `, ${formatSinceDose(yVerdict.minutesAfterDose)} after the dose`}. Two days
+                  in a row is a pattern worth showing your neurologist.
+                </p>
+              )}
               <p className="flex flex-wrap gap-x-5 gap-y-2 pt-1">
                 <Link href="/activity" className="kiln-underline">
                   See the dose day chart

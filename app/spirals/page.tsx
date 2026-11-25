@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import { SceneSlot } from "@/components/scene-slot";
 import { SpiralIndex } from "@/components/spiral-index";
 import { Card, CardContent } from "@/components/ui/card";
-import { allSummaries } from "@/lib/data";
+import { getAdapter } from "@/lib/adapter";
 
 export const metadata: Metadata = { title: "Spirals" };
 
 export default function SpiralsPage() {
-  const rows = allSummaries();
+  const rows = getAdapter().listSummaries();
   return (
     <div className="space-y-8">
       <header className="volutra-rise space-y-2">

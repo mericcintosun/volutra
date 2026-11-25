@@ -2,14 +2,15 @@ import type { Metadata } from "next";
 import { DoseTimeline, type TimelineDay } from "@/components/dose-timeline";
 import { SceneSlot } from "@/components/scene-slot";
 import { Card, CardContent } from "@/components/ui/card";
-import { DOSE_DAYS, summariesForDay } from "@/lib/data";
+import { getAdapter } from "@/lib/adapter";
 
 export const metadata: Metadata = { title: "Dose day" };
 
 export default function ActivityPage() {
-  const days: TimelineDay[] = DOSE_DAYS.map((d) => ({
+  const adapter = getAdapter();
+  const days: TimelineDay[] = adapter.listDays().map((d) => ({
     ...d,
-    tests: summariesForDay(d.day).map((t) => ({
+    tests: adapter.summariesForDay(d.day).map((t) => ({
       id: t.id,
       clock: t.clock,
       amplitudeMm: t.amplitudeMm,

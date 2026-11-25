@@ -32,20 +32,48 @@ Nothing is uploaded. All math runs in the tab and the diary lives in `localStora
 
 ## How it uses machine learning
 
-The ML piece is a small, inspectable model rather than an API call. The same features the browser extracts (log band amplitude, share of power in the tremor band, distance of the peak from 5 Hz) feed a logistic regression meant to be trained on the [UCI Parkinson Disease Spiral Drawings dataset](https://archive.ics.uci.edu/dataset/395/parkinson+disease+spiral+drawings+using+digitized+graphics+) (62 people with Parkinson's, 15 controls, CC BY 4.0). The output is shown as "resemblance to the dataset's Parkinson's group", always as a secondary signal.
+The ML piece is a small, inspectable model rather than an API call. The same features the browser extracts (log band amplitude, share of power in the tremor band, distance of the peak from 5 Hz) feed a class-balanced logistic regression trained on the [UCI Parkinson Disease Spiral Drawings dataset](https://archive.ics.uci.edu/dataset/395/parkinson+disease+spiral+drawings+using+digitized+graphics+) (UCI 395, CC BY 4.0; the dataset page lists 62 people with Parkinson's and 15 controls). The output is shown as "resemblance to the dataset's Parkinson's group", always as a secondary signal.
+
+How the pieces fit:
+
+1. `scripts/convert-uci.ts` downloads the UCI 395 archive, reads the zip with `node:zlib` (no unzip dependency), keeps the static spiral test (Test ID 0) with the pen down, converts timestamps to seconds, finds each spiral's centre by a grid search that minimizes the Archimedes fit residual, and scales every file by one factor so the median outer radius matches the on-screen guide. Frequency does not depend on that scale; amplitude is approximate millimetres.
+2. The same `lib/tremor.ts` pipeline that runs in the browser reads every subject's spiral, and `lib/features.ts` turns it into the three features.
+3. `scripts/train-model.ts` runs 5-fold subject-wise stratified cross-validation (folds assigned by sorted file name, so the split is reproducible), reports balanced accuracy on the pooled out-of-fold predictions, refits on every subject and writes `lib/model-weights.json`.
+4. The browser loads those weights, checks them with zod, and falls back to the hand-set provisional weights if the file does not parse.
+
+Proof run results (written by `npm run proof`, never by hand):
+
+<!-- PROOF:BEGIN uci-convert -->
+UCI 395 converted on 2026-11-25: 61 Parkinson's and 15 control files with a static spiral test. Parkinson's replay `H_p000-0043.txt`: 142.1 Hz sampling, peak 5.76 Hz, band amplitude 2.02 mm. Control replay `C_0002.txt`: 142.1 Hz sampling, peak 5.19 Hz, band amplitude 0.04 mm.
+<!-- PROOF:END uci-convert -->
+
+<!-- PROOF:BEGIN model-cv -->
+Subject-wise 5-fold stratified cross-validation over 61 Parkinson's and 15 control subjects: balanced accuracy 0.661 on the pooled out-of-fold predictions (trained 2026-11-25).
+<!-- PROOF:END model-cv -->
+
+<!-- PROOF:BEGIN tests -->
+`npm test` on 2026-11-25: 7 passed, 0 failed.
+<!-- PROOF:END tests -->
+
+<!-- PROOF:BEGIN latency -->
+`analyzeTrace` on the Parkinson's replay (1810 points): median 0.9 ms over 20 runs in Node on the proof machine.
+<!-- PROOF:END latency -->
 
 **Honest status of this build:**
 
-- The weights in `lib/model.ts` are hand-set placeholders. The UI labels the score as an uncalibrated preview and claims no accuracy figure. The training script with subject-wise cross-validation is the next milestone, and its balanced accuracy will be reported here as measured, whatever it turns out to be.
-- The two "UCI replay" records are synthetic stand-ins shaped like the dataset's static spiral tests. The home diary is also synthesized from per-record parameters (`lib/data.ts`) so every number on screen comes out of the real pipeline.
-- The model would learn from Wacom tablet recordings. Finger and trackpad drawings come from a different distribution, which is why frequency and amplitude stay the primary output.
+- The two UCI replays and the model weights become real through `npm run proof`. It converts two UCI 395 recordings into `data/uci/manifest.json` and trains `lib/model-weights.json`. Until a proof run has been committed, the replays are synthesized stand-ins and the weights are hand-set, and the UI says so under the pad and on the result card. No accuracy figure is shown anywhere until the training script has measured one.
+- The replay pick is disclosed, not hidden: the Parkinson's replay is the file whose spectrum peak is in 4 to 6 Hz with the highest band amplitude, and the control replay is the control file with the lowest band amplitude. The rule is also written into the manifest's `source` field. These are the clearest examples in the dataset, not typical ones.
+- The 11 home spirals and the two dose days are synthesized from per-record parameters (`fixtures/seed-diary.json`), so every number on screen still comes out of the real pipeline.
+- The model learns from Wacom tablet recordings. Finger and trackpad drawings come from a different distribution, which is why frequency and amplitude stay the primary output.
 
 ## Technologies
 
 - Next.js 15 (App Router), TypeScript in strict mode, Tailwind CSS v4
 - Canvas 2D and Pointer Events with `getCoalescedEvents()`
 - Hand-written signal processing: polar unwrap, least-squares fit, linear resampling, Hann window, radix-2 FFT
-- Logistic regression in plain TypeScript
+- Logistic regression in plain TypeScript, trained by a Node script with subject-wise cross-validation
+- zod for checking route ids, the converted recordings and the weights file
+- tsx to run the conversion, training, proof and test scripts; tests use `node:test`
 - three.js with React Three Fiber and drei for the 3D coil
 - SVG charts, `localStorage`, print CSS
 - Deployed on Vercel
@@ -68,9 +96,12 @@ Volutra is a measurement diary, not a diagnostic tool.
 npm install
 npm run dev
 # open http://localhost:3000
+
+npm test         # core pipeline tests (node:test)
+npm run proof    # download UCI 395, convert the replays, train, rewrite the proof blocks above
 ```
 
-No environment variables are needed (see `.env.example`). `npm run build` produces the production bundle that Vercel deploys.
+No secret is needed (see `.env.example`). `ADAPTER_MODE=real` serves the converted UCI recordings; anything else serves the seed stand-ins. `npm run build` produces the production bundle that Vercel deploys.
 
 Routes:
 
@@ -81,8 +112,6 @@ Routes:
 
 ## What we would build next
 
-- The UCI conversion and training script: subject-wise k-fold cross-validation, class-balanced loss, weights written to JSON and loaded by the browser.
-- Replace the two stand-in replays with real converted recordings.
 - Multi-dose days, so the threshold restarts after every dose.
 - A week view that shows whether the wearing-off hour drifts.
 - Validation against clinician-rated tremor scores before any claim beyond "measurement diary".

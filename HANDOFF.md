@@ -43,8 +43,8 @@ All three sections are in the rail (`components/app-rail.tsx`); the rail's singl
 ### File map
 
 - `lib/tremor.ts`: REAL. Polar unwrap, least-squares `r = a + bθ`, resample to 100 Hz, detrend, Hann window, radix-2 FFT, peak with parabolic interpolation, band RMS by Parseval, spectrum, plus `synthesizeTrace` (seed traces) and `coilPath` (3D geometry).
-- `lib/model.ts`: logistic regression scorer is real code; **weights are a mock** (`FEATURES`, `BIAS`, `MODEL_CARD.status = "provisional"`). UI says so.
-- `lib/data.ts`: seed diary (2 dose days, 11 home spirals, 2 UCI stand-ins), `assessDay` wearing-off rule, summaries. **Mock:** the UCI records are synthetic (`traceForTest` synthesizes every trace from `generator`).
+- `lib/model.ts`: logistic regression scorer; loads `lib/model-weights.json` (provisional until `npm run proof` trains it, see Phase 2).
+- `lib/data.ts`: seed diary (2 dose days, 11 home spirals, 2 UCI stand-ins), `assessDay` wearing-off rule, `createDiary` summaries. `traceForTest` returns a converted recording when the record has one, otherwise synthesizes from `generator`.
 - `lib/local-diary.ts`: localStorage for saved drawings and dose-time overrides.
 - `components/spiral-pad.tsx`: canvas, guide spiral, pointer capture with `getCoalescedEvents`, real-time replay.
 - `components/spiral-session.tsx`: core screen (pad + result + save).
@@ -123,6 +123,55 @@ None, agent has no shell.
 
 ### Next best step
 Phase 2: download UCI 395, write `scripts/convert-uci.mjs` into `data/uci/*.json`, add the real adapter branch, train the weights into `lib/model-weights.json`, create `npm run proof` and `.farm-live.json`, record the deploy URL here.
+
+## Phase 2: real UCI recordings and a trained model
+
+### Goal
+Make DEMO.md step 3 real: `/spirals/uci-pwp-sst-07` replays a real UCI 395 Parkinson's recording, `/spirals/uci-ctl-sst-02` a real control recording, and the similarity bar uses weights trained on UCI 395 with a measured subject-wise CV balanced accuracy.
+
+### Status
+All five slices written. Nothing was built, run or downloaded: the agent had no shell. The mechanism that went real is the UCI replays plus the trained weights, and both are produced by `npm run proof` (convert, train, tests, latency). Until the runner's proof run is committed, `data/uci/manifest.json` is `not-converted` and `lib/model-weights.json` is a copy of the provisional weights; the build passes on those and the UI says it is showing stand-ins.
+
+What stays on fixtures: the 11 home spirals, the two dose days, and the two UCI stand-ins (the fake adapter always, the real adapter until a proof run).
+
+Env keys: none. `.farm-live.json` has `requiredEnv: []` and `optionalEnv: []` because the mechanism is in-browser math over public data, so no secret is needed. `ADAPTER_MODE` is a non-secret switch the runner sets to `real`.
+
+### Decisions
+- **Config and errors.** `lib/config.ts` is the only reader of server env (`ADAPTER_MODE`) and holds the fetch, CV and training constants. `CORE_LOG` lives in `lib/log.ts` and is re-exported by config, so `lib/model.ts` (bundled into the client through `result-card`) can log without importing config. `lib/errors.ts` holds the `ErrorCode` union and one-sentence `HINTS`.
+- **Adapter split.** `lib/adapter-fake.ts` (source `seed`), `lib/adapter-real.ts` (source `uci-395`, or `uci-395-pending` with the stand-ins when the manifest fails zod or is not converted), `lib/adapter.ts` only selects. `DiaryAdapter`, `DiarySource` and `AdapterMode` moved to `lib/types.ts` and are re-exported from `lib/adapter.ts`.
+- **createDiary(tests).** `lib/data.ts` builds the lookup and summary helpers over any record list; the old exported names are bound to the seed diary, so `today-coil`, `dose-timeline` and `spiral-index` did not change. Analysis is memoized by trace content (`lib/cache.ts`, FNV-1a), synthesized traces by record object, so fake and real records with the same id never collide.
+- **Source line.** The detail page computes the trace and the line under the pad on the server from `adapter.source` and passes them to `SpiralSession`, which no longer imports `@/lib/data`. Home records get "Sample data: a synthesized home spiral from the seed diary." (not in the spec table, added for honesty).
+- **Converter.** Zip read with `node:zlib` and the central directory (nested zips recursed). Group from the folder name (`control` or `parkinson`). Timestamps in ms when the median spacing is over 1. Y flipped (tablet origin assumed top-left). Centre: grid search of plus or minus 15 units in 64 by 64 steps around the first pen-down point (or the bounding-box centre if that fits better), on at most 600 sampled points per file to keep the proof under 2 minutes. One scale for all files: median 95th-percentile radius maps to `GUIDE_MAX_RADIUS_MM` (45 mm, now exported from `lib/tremor.ts`). Points are rounded and re-analysed so the proof numbers match the UI. If the download fails, `.cache/uci/extracted/` is used when present.
+- **Training.** Features from `lib/features.ts` (moved out of `lib/model.ts`). Class-balanced logistic regression, gradient descent from zero, 4000 iterations, rate 0.05; 5-fold stratified folds by sorted file name within each class; balanced accuracy on pooled out-of-fold predictions; refit on all and validated with zod before writing. Each file counts as one subject.
+- **Model loading.** `lib/model.ts` validates `lib/model-weights.json` with zod and checks every feature name; on failure it falls back to `fixtures/model-weights.provisional.json` instead of throwing. `MODEL_CARD.subjects` is null until training, and the result card prints accuracy only when `status === "trained"` and `balancedAccuracy !== null`.
+- **API edge.** `/api/spirals/[id]` parses the id with `SpiralIdSchema` before `getAdapter()`; 400 `invalid_input` and 404 `not_found` return `{ error, hint }`. All three routes return `source: adapter.source`.
+- **No `prompts/` folder.** Nothing in Volutra generates text; every sentence around a number is composed by code.
+- `lib/data/seed.ts` now imports with relative paths so tsx can load it in tests and scripts.
+
+### Failed attempts
+None. (Nothing could be executed, so the zip reader, the converter and the training script are untested until the proof run.)
+
+### Files changed
+Created: `lib/config.ts`, `lib/log.ts`, `lib/errors.ts`, `lib/schemas.ts`, `lib/cache.ts`, `lib/features.ts`, `lib/adapter-fake.ts`, `lib/adapter-real.ts`, `lib/model-weights.json`, `data/uci/manifest.json`, `scripts/lib/unzip.ts`, `scripts/lib/fetch.ts`, `scripts/convert-uci.ts`, `scripts/train-model.ts`, `scripts/proof.ts`, `tests/core.test.ts`, `tests/fixtures/uci-sample.txt`, `.farm-live.json`, `.farm-commits.json`.
+Edited: `lib/adapter.ts`, `lib/data.ts`, `lib/data/seed.ts`, `lib/model.ts`, `lib/types.ts`, `lib/tremor.ts`, `app/api/spirals/route.ts`, `app/api/spirals/[id]/route.ts`, `app/api/days/route.ts`, `app/spirals/[id]/page.tsx`, `components/spiral-session.tsx`, `components/result-card.tsx`, `package.json`, `.env.example`, `.gitignore`, `README.md`, `DEMO.md`, `CLAUDE.md` (line 19 only), `HANDOFF.md`.
+
+### Commands run
+None, agent has no shell.
+
+### Open questions
+- The UCI 395 tablet coordinate units and the exact folder layout inside the archive are assumed from the dataset description, not checked. The converter logs the folder names it finds; if the centre search window (plus or minus 15 units) is wrong for the real units, replays will look off-centre and the peak may move. Check the `[core] uci convert ... unitsPerMm=` log line.
+- If no Parkinson's file peaks in 4 to 6 Hz, the converter writes nothing and the README says why. The rule is not relaxed silently.
+- The test "patientGroupSimilarity increases with amplitude" runs against whatever weights are committed. If training ever gives the amplitude feature a negative weight, that test fails; report it, do not edit the weights.
+- `lib/brand-files.ts` reads `NEXT_PUBLIC_BRAND_FILES` (pre-existing, build-time, not a secret). It was left there so client code does not import `lib/config.ts`.
+- `.gitignore` has `.farm-*`, so `.farm-live.json` and `.farm-commits.json` are ignored by git unless the runner adds them with force.
+
+### Manual checklist (needs a person)
+- Confirm hackathon eligibility (students only) for every team member.
+- Team members and roles for the Devpost form.
+- After the proof run: open `/spirals/uci-pwp-sst-07`, press Replay twice, and check the peak is in 4 to 6 Hz and the numbers match both times.
+
+### Next best step (Phase 3)
+Dose timeline polish: a second dose restarts the baseline, local "Your device" days get a proper label, and the seed day stays the demo default. Before that, read the proof blocks in README and record the measured balanced accuracy and the chosen subject files here.
 
 ## 5. Definition of done
 

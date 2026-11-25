@@ -18,7 +18,7 @@ A real Parkinson's patient's 2017 tablet spiral redraws itself at its own speed 
 
 1. `/` (`app/page.tsx`): today's six seeded spirals since the 08:00 dose, the 3D coil, and the day's verdict in plain sentences.
 2. `/spirals/new` (`app/spirals/[id]/page.tsx`, `id = new`): draw a spiral on the pad, then read the result card: dominant frequency in Hz, amplitude in mm, the spectrum, and points per second.
-3. `/spirals/uci-pwp-sst-07` (`app/spirals/[id]/page.tsx`): press Replay. The tablet recording redraws, the spectrum peak rises near 5 Hz, and the similarity bar appears with its model card status.
+3. `/spirals/uci-pwp-sst-07` (`app/spirals/[id]/page.tsx`): press Replay. The tablet recording redraws, the spectrum peak rises near 5 Hz, and the similarity bar appears with its model card status. The line under the pad names the UCI 395 subject file, or says plainly that a stand-in is shown.
 4. `/spirals` (`app/spirals/page.tsx`): filter by day, toggle "Past threshold only", search the notes, then open the control record `uci-ctl-sst-02` to compare.
 5. `/activity` (`app/activity/page.tsx`): the 08:00 dose, the 14:40 wearing-off band, and changing the dose time to watch the baseline, threshold and marks recompute.
 6. `/activity` print and CSV (`app/activity/page.tsx`): a one-page A4 printout with the "Not a diagnostic tool" line, and the CSV download.
@@ -33,4 +33,6 @@ The builder records the 90-second video himself on the live URL, following steps
 
 ## Honest status
 
-Until Phase 2 lands, the two UCI records are synthesized stand-ins and the model weights are provisional. The UI labels both. No accuracy figure is shown until one is measured.
+The two UCI replays and the model weights become real through `npm run proof`: it converts two UCI 395 static spiral recordings into `data/uci/manifest.json` and trains `lib/model-weights.json` with subject-wise cross-validation. The live site serves them when `ADAPTER_MODE=real`. Until a proof run is committed, both replays are synthesized stand-ins and the weights are hand-set; the line under the pad and the result card say so, and no accuracy figure is shown.
+
+The replay pick is disclosed: the Parkinson's replay is the file whose spectrum peak is in 4 to 6 Hz with the highest band amplitude, and the control replay is the control file with the lowest band amplitude. They are the clearest examples in the dataset, not typical ones. The 11 home spirals and both dose days stay synthesized from the seed fixture.

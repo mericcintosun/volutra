@@ -1,0 +1,32 @@
+{
+  "status": "trained",
+  "features": [
+    {
+      "name": "Band amplitude (log mm)",
+      "mean": -2.165804,
+      "std": 0.784792,
+      "weight": 1.689096
+    },
+    {
+      "name": "Share of power in 3 to 12 Hz",
+      "mean": 0.120105,
+      "std": 0.11697,
+      "weight": -0.703764
+    },
+    {
+      "name": "Peak distance from 5 Hz",
+      "mean": 1.491184,
+      "std": 0.687976,
+      "weight": -0.074271
+    }
+  ],
+  "bias": 0.491754,
+  "balancedAccuracy": 0.6612,
+  "folds": 5,
+  "subjects": {
+    "parkinsons": 61,
+    "control": 15
+  },
+  "trainedAt": "2026-11-25T12:36:14.499Z",
+  "testsUsed": 76
+}

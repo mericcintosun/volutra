@@ -89,9 +89,9 @@ export function ResultCard({ analysis, origin }: { analysis: SpiralAnalysis; ori
             <div className="h-full bg-second" style={{ width: `${pct}%` }} />
           </div>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            {MODEL_CARD.status === "provisional"
-              ? "Uncalibrated preview. The logistic regression runs on the features above, but its weights are hand-set until the UCI 395 training run replaces them, so no accuracy figure is claimed yet."
-              : `Logistic regression on UCI 395 (${MODEL_CARD.subjects.parkinsons} Parkinson's, ${MODEL_CARD.subjects.control} control). Subject-wise ${MODEL_CARD.folds}-fold balanced accuracy: ${((MODEL_CARD.balancedAccuracy ?? 0) * 100).toFixed(0)}%.`}{" "}
+            {MODEL_CARD.status === "trained" && MODEL_CARD.balancedAccuracy !== null
+              ? `Logistic regression trained on UCI 395 static spirals${MODEL_CARD.subjects ? ` (${MODEL_CARD.subjects.parkinsons} Parkinson's, ${MODEL_CARD.subjects.control} control subjects)` : ""}. Subject-wise ${MODEL_CARD.folds ?? ""}-fold cross-validated balanced accuracy: ${(MODEL_CARD.balancedAccuracy * 100).toFixed(0)}%, measured by the training script.`
+              : "Uncalibrated preview. The logistic regression runs on the features above, but its weights are hand-set until the UCI 395 training run replaces them, so no accuracy figure is claimed yet."}{" "}
             {MODEL_CARD.caveat} Not a diagnosis.
           </p>
         </div>

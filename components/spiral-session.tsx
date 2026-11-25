@@ -7,7 +7,8 @@ import { ResultCard } from "@/components/result-card";
 import { SpiralPad } from "@/components/spiral-pad";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { saveLocalTest } from "@/lib/local-diary";
+import { hashTrace } from "@/lib/cache";
+import { saveLocalTestOnce } from "@/lib/local-diary";
 import { analyzeTrace, type SpiralAnalysis, type TracePoint } from "@/lib/tremor";
 
 type Phase = "idle" | "running" | "done" | "short";
@@ -28,6 +29,8 @@ export function SpiralSession({ mode, trace, sourceLine, initial = null }: Spira
   const [playToken, setPlayToken] = useState(0);
   const [padKey, setPadKey] = useState(0);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [traceKey, setTraceKey] = useState<TracePoint[] | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const handleComplete = (points: TracePoint[]) => {
     const result = analyzeTrace(points);
@@ -35,19 +38,27 @@ export function SpiralSession({ mode, trace, sourceLine, initial = null }: Spira
       setPhase("short");
       return;
     }
+    setTraceKey(points);
     setAnalysis(result);
     setPhase("done");
   };
 
   const handleSave = () => {
-    if (!analysis) return;
-    setSavedAt(saveLocalTest(analysis).clock);
+    if (!analysis || !traceKey || saving || savedAt !== null) return;
+    setSaving(true);
+    try {
+      // keyed by the trace content, so a second press finds the first entry and writes nothing
+      setSavedAt(saveLocalTestOnce(analysis, hashTrace(traceKey)).clock);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const reset = () => {
     setAnalysis(null);
     setPhase("idle");
     setSavedAt(null);
+    setTraceKey(null);
     setPadKey((k) => k + 1);
   };
 
@@ -95,7 +106,7 @@ export function SpiralSession({ mode, trace, sourceLine, initial = null }: Spira
                 <Eraser aria-hidden />
                 Clear
               </Button>
-              <Button onClick={handleSave} disabled={phase !== "done" || savedAt !== null}>
+              <Button onClick={handleSave} disabled={phase !== "done" || saving || savedAt !== null}>
                 <Save aria-hidden />
                 {savedAt ? `Saved at ${savedAt}` : "Save to today"}
               </Button>

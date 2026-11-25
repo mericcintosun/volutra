@@ -50,5 +50,22 @@ export const ModelWeightsSchema = z.object({
   testsUsed: z.number().int().nonnegative().nullable().optional(),
 });
 
+/** One reading saved from the drawing pad into this browser's storage (lib/local-diary.ts). */
+export const LocalTestSchema = z.object({
+  id: z.string().min(1),
+  key: z.string().min(1),
+  day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  clock: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  peakHz: z.number().finite(),
+  amplitudeMm: z.number().finite(),
+  sampleRateHz: z.number().finite(),
+});
+
+export const LocalTestsSchema = z.array(LocalTestSchema);
+
+/** Dose clock overrides keyed by diary day, each an HH:MM string. */
+export const DoseClocksSchema = z.record(z.string(), z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/));
+
+export type LocalTest = z.infer<typeof LocalTestSchema>;
 export type UciRecording = z.infer<typeof UciRecordingSchema>;
 export type UciManifest = z.infer<typeof UciManifestSchema>;

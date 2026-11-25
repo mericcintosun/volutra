@@ -1,82 +1,23 @@
-import { analyzeTrace, synthesizeTrace, type SpiralAnalysis, type SpiralGenerator, type TracePoint } from "./tremor";
+import { SEED_DOSE_DAYS, SEED_PERSON, SEED_TESTS } from "./data/seed";
+import { analyzeTrace, synthesizeTrace, type SpiralAnalysis, type TracePoint } from "./tremor";
+import type { DayPoint, DayVerdict, DiaryPerson, DoseDay, SpiralStatus, SpiralTest, TestSummary } from "./types";
 
-// Seeded demo diary. Two days of home spirals after a 08:00 levodopa dose, plus two
+// Seeded demo diary: two days of home spirals after a 08:00 levodopa dose, plus two
 // stand-ins shaped like UCI 395 static spiral tests (one Parkinson's, one control).
-// Traces are synthesized from each record's generator so every number on screen comes
-// out of the real analysis pipeline. TODO: swap the two "uci" generators for the
-// converted UCI recordings once the dataset is downloaded (HANDOFF.md, mission step 2).
+// The values live in fixtures/seed-diary.json; this module keeps the public names and
+// the pure helpers. Traces are synthesized from each record's generator so every number
+// on screen comes out of the real analysis pipeline. Phase 2 swaps the two "uci" records
+// for converted UCI recordings through the real adapter (lib/adapter.ts).
 
-export type SpiralSource = "home" | "uci";
-export type SpiralStatus = "baseline" | "within" | "past" | "replay";
+export type { DayPoint, DayVerdict, DoseDay, SpiralSource, SpiralStatus, SpiralTest, TestSummary } from "./types";
 
-export interface SpiralTest {
-  id: string;
-  /** ISO date of the diary day */
-  day: string;
-  /** local clock time the spiral was drawn, HH:MM */
-  clock: string;
-  source: SpiralSource;
-  device: string;
-  hand: "Right" | "Left";
-  note: string;
-  uciGroup?: "Parkinson's" | "Control";
-  generator: SpiralGenerator;
-}
-
-export interface DoseDay {
-  day: string;
-  label: string;
-  doseClock: string;
-  nextDoseClock: string;
-  medication: string;
-  diary: string;
-}
-
-export const DEMO_PERSON = {
-  label: "Demo diary: R., 64, right-handed, diagnosed 2019",
-  medication: "Levodopa/carbidopa 100/25 mg",
-  review: "Next neurology review: 12 Jan 2027",
-};
+export const DEMO_PERSON: DiaryPerson = SEED_PERSON;
 
 export const WEARING_OFF_RATIO = 1.5;
 
-export const DOSE_DAYS: DoseDay[] = [
-  {
-    day: "2026-11-24",
-    label: "Tue 24 Nov",
-    doseClock: "08:00",
-    nextDoseClock: "16:30",
-    medication: "Levodopa/carbidopa 100/25 mg",
-    diary: "Felt stiff on the walk back from the pharmacy around three.",
-  },
-  {
-    day: "2026-11-23",
-    label: "Mon 23 Nov",
-    doseClock: "08:00",
-    nextDoseClock: "16:30",
-    medication: "Levodopa/carbidopa 100/25 mg",
-    diary: "Good morning. Cup rattled on the saucer at tea time.",
-  },
-];
+export const DOSE_DAYS: DoseDay[] = SEED_DOSE_DAYS;
 
-const phone = "Phone, finger";
-const laptop = "Laptop trackpad";
-
-export const SPIRAL_TESTS: SpiralTest[] = [
-  { id: "sp-1124-0905", day: "2026-11-24", clock: "09:05", source: "home", device: phone, hand: "Right", note: "After breakfast, sitting at the kitchen table.", generator: { durationS: 14, sampleRateHz: 120, tremorHz: 5.2, tremorMm: 0.41 } },
-  { id: "sp-1124-1020", day: "2026-11-24", clock: "10:20", source: "home", device: phone, hand: "Right", note: "Before the pharmacy walk.", generator: { durationS: 13, sampleRateHz: 120, tremorHz: 5.0, tremorMm: 0.44 } },
-  { id: "sp-1124-1140", day: "2026-11-24", clock: "11:40", source: "home", device: laptop, hand: "Right", note: "Trackpad, a little rushed.", generator: { durationS: 11, sampleRateHz: 60, tremorHz: 5.3, tremorMm: 0.52 } },
-  { id: "sp-1124-1315", day: "2026-11-24", clock: "13:15", source: "home", device: phone, hand: "Right", note: "After lunch.", generator: { durationS: 15, sampleRateHz: 120, tremorHz: 5.1, tremorMm: 0.56 } },
-  { id: "sp-1124-1440", day: "2026-11-24", clock: "14:40", source: "home", device: phone, hand: "Right", note: "Hand felt shaky holding the cup.", generator: { durationS: 16, sampleRateHz: 120, tremorHz: 4.9, tremorMm: 0.93 } },
-  { id: "sp-1124-1555", day: "2026-11-24", clock: "15:55", source: "home", device: phone, hand: "Right", note: "Stiff, waiting for the 16:30 dose.", generator: { durationS: 18, sampleRateHz: 120, tremorHz: 4.8, tremorMm: 1.28 } },
-  { id: "sp-1123-0855", day: "2026-11-23", clock: "08:55", source: "home", device: phone, hand: "Right", note: "First test of the day.", generator: { durationS: 14, sampleRateHz: 120, tremorHz: 5.4, tremorMm: 0.39 } },
-  { id: "sp-1123-1040", day: "2026-11-23", clock: "10:40", source: "home", device: phone, hand: "Right", note: "Calm morning.", generator: { durationS: 13, sampleRateHz: 120, tremorHz: 5.2, tremorMm: 0.43 } },
-  { id: "sp-1123-1250", day: "2026-11-23", clock: "12:50", source: "home", device: laptop, hand: "Right", note: "Trackpad at the desk.", generator: { durationS: 12, sampleRateHz: 60, tremorHz: 5.0, tremorMm: 0.51 } },
-  { id: "sp-1123-1510", day: "2026-11-23", clock: "15:10", source: "home", device: phone, hand: "Right", note: "Tea time, cup rattled.", generator: { durationS: 16, sampleRateHz: 120, tremorHz: 4.9, tremorMm: 0.81 } },
-  { id: "sp-1123-1705", day: "2026-11-23", clock: "17:05", source: "home", device: phone, hand: "Right", note: "Half an hour after the second dose.", generator: { durationS: 15, sampleRateHz: 120, tremorHz: 5.1, tremorMm: 0.5 } },
-  { id: "uci-pwp-sst-07", day: "2017-03-14", clock: "11:20", source: "uci", device: "Wacom tablet (UCI)", hand: "Right", uciGroup: "Parkinson's", note: "Stand-in shaped like a UCI static spiral test from the Parkinson's group. Replace with the converted recording.", generator: { durationS: 20, sampleRateHz: 100, tremorHz: 5.1, tremorMm: 1.6 } },
-  { id: "uci-ctl-sst-02", day: "2017-03-09", clock: "10:05", source: "uci", device: "Wacom tablet (UCI)", hand: "Right", uciGroup: "Control", note: "Stand-in shaped like a UCI static spiral test from the control group. Replace with the converted recording.", generator: { durationS: 17, sampleRateHz: 100, tremorHz: 8.8, tremorMm: 0.09 } },
-];
+export const SPIRAL_TESTS: SpiralTest[] = SEED_TESTS;
 
 /* ---------- clock helpers ---------- */
 
@@ -122,21 +63,6 @@ export function analysisForTest(test: SpiralTest): SpiralAnalysis | null {
 
 /* ---------- wearing-off rule ---------- */
 
-export interface DayPoint {
-  id: string;
-  clock: string;
-  amplitudeMm: number;
-}
-
-export interface DayVerdict {
-  baselineMm: number | null;
-  thresholdMm: number | null;
-  baselineIds: string[];
-  wearingOffClock: string | null;
-  wearingOffId: string | null;
-  minutesAfterDose: number | null;
-}
-
 /**
  * Personal baseline = mean amplitude of the first two spirals drawn at least 30 minutes
  * after the dose. The first later spiral at or above baseline x 1.5 marks wearing-off.
@@ -163,22 +89,6 @@ export function assessDay(points: DayPoint[], doseClock: string, ratio = WEARING
 }
 
 /* ---------- summaries for lists, overview and timeline ---------- */
-
-export interface TestSummary {
-  id: string;
-  day: string;
-  dayLabel: string;
-  clock: string;
-  source: SpiralSource;
-  device: string;
-  note: string;
-  uciGroup?: "Parkinson's" | "Control";
-  peakHz: number;
-  amplitudeMm: number;
-  sampleRateHz: number;
-  minutesSinceDose: number | null;
-  status: SpiralStatus;
-}
 
 function rawSummary(test: SpiralTest): Omit<TestSummary, "status"> {
   const a = analysisForTest(test);

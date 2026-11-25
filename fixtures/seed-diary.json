@@ -1,0 +1,224 @@
+{
+  "person": {
+    "label": "Demo diary: R., 64, right-handed, diagnosed 2019",
+    "medication": "Levodopa/carbidopa 100/25 mg",
+    "review": "Next neurology review: 12 Jan 2027"
+  },
+  "doseDays": [
+    {
+      "day": "2026-11-24",
+      "label": "Tue 24 Nov",
+      "doseClock": "08:00",
+      "nextDoseClock": "16:30",
+      "medication": "Levodopa/carbidopa 100/25 mg",
+      "diary": "Felt stiff on the walk back from the pharmacy around three."
+    },
+    {
+      "day": "2026-11-23",
+      "label": "Mon 23 Nov",
+      "doseClock": "08:00",
+      "nextDoseClock": "16:30",
+      "medication": "Levodopa/carbidopa 100/25 mg",
+      "diary": "Good morning. Cup rattled on the saucer at tea time."
+    }
+  ],
+  "tests": [
+    {
+      "id": "sp-1124-0905",
+      "day": "2026-11-24",
+      "clock": "09:05",
+      "source": "home",
+      "device": "Phone, finger",
+      "hand": "Right",
+      "note": "After breakfast, sitting at the kitchen table.",
+      "generator": {
+        "durationS": 14,
+        "sampleRateHz": 120,
+        "tremorHz": 5.2,
+        "tremorMm": 0.41
+      }
+    },
+    {
+      "id": "sp-1124-1020",
+      "day": "2026-11-24",
+      "clock": "10:20",
+      "source": "home",
+      "device": "Phone, finger",
+      "hand": "Right",
+      "note": "Before the pharmacy walk.",
+      "generator": {
+        "durationS": 13,
+        "sampleRateHz": 120,
+        "tremorHz": 5,
+        "tremorMm": 0.44
+      }
+    },
+    {
+      "id": "sp-1124-1140",
+      "day": "2026-11-24",
+      "clock": "11:40",
+      "source": "home",
+      "device": "Laptop trackpad",
+      "hand": "Right",
+      "note": "Trackpad, a little rushed.",
+      "generator": {
+        "durationS": 11,
+        "sampleRateHz": 60,
+        "tremorHz": 5.3,
+        "tremorMm": 0.52
+      }
+    },
+    {
+      "id": "sp-1124-1315",
+      "day": "2026-11-24",
+      "clock": "13:15",
+      "source": "home",
+      "device": "Phone, finger",
+      "hand": "Right",
+      "note": "After lunch.",
+      "generator": {
+        "durationS": 15,
+        "sampleRateHz": 120,
+        "tremorHz": 5.1,
+        "tremorMm": 0.56
+      }
+    },
+    {
+      "id": "sp-1124-1440",
+      "day": "2026-11-24",
+      "clock": "14:40",
+      "source": "home",
+      "device": "Phone, finger",
+      "hand": "Right",
+      "note": "Hand felt shaky holding the cup.",
+      "generator": {
+        "durationS": 16,
+        "sampleRateHz": 120,
+        "tremorHz": 4.9,
+        "tremorMm": 0.93
+      }
+    },
+    {
+      "id": "sp-1124-1555",
+      "day": "2026-11-24",
+      "clock": "15:55",
+      "source": "home",
+      "device": "Phone, finger",
+      "hand": "Right",
+      "note": "Stiff, waiting for the 16:30 dose.",
+      "generator": {
+        "durationS": 18,
+        "sampleRateHz": 120,
+        "tremorHz": 4.8,
+        "tremorMm": 1.28
+      }
+    },
+    {
+      "id": "sp-1123-0855",
+      "day": "2026-11-23",
+      "clock": "08:55",
+      "source": "home",
+      "device": "Phone, finger",
+      "hand": "Right",
+      "note": "First test of the day.",
+      "generator": {
+        "durationS": 14,
+        "sampleRateHz": 120,
+        "tremorHz": 5.4,
+        "tremorMm": 0.39
+      }
+    },
+    {
+      "id": "sp-1123-1040",
+      "day": "2026-11-23",
+      "clock": "10:40",
+      "source": "home",
+      "device": "Phone, finger",
+      "hand": "Right",
+      "note": "Calm morning.",
+      "generator": {
+        "durationS": 13,
+        "sampleRateHz": 120,
+        "tremorHz": 5.2,
+        "tremorMm": 0.43
+      }
+    },
+    {
+      "id": "sp-1123-1250",
+      "day": "2026-11-23",
+      "clock": "12:50",
+      "source": "home",
+      "device": "Laptop trackpad",
+      "hand": "Right",
+      "note": "Trackpad at the desk.",
+      "generator": {
+        "durationS": 12,
+        "sampleRateHz": 60,
+        "tremorHz": 5,
+        "tremorMm": 0.51
+      }
+    },
+    {
+      "id": "sp-1123-1510",
+      "day": "2026-11-23",
+      "clock": "15:10",
+      "source": "home",
+      "device": "Phone, finger",
+      "hand": "Right",
+      "note": "Tea time, cup rattled.",
+      "generator": {
+        "durationS": 16,
+        "sampleRateHz": 120,
+        "tremorHz": 4.9,
+        "tremorMm": 0.81
+      }
+    },
+    {
+      "id": "sp-1123-1705",
+      "day": "2026-11-23",
+      "clock": "17:05",
+      "source": "home",
+      "device": "Phone, finger",
+      "hand": "Right",
+      "note": "Half an hour after the second dose.",
+      "generator": {
+        "durationS": 15,
+        "sampleRateHz": 120,
+        "tremorHz": 5.1,
+        "tremorMm": 0.5
+      }
+    },
+    {
+      "id": "uci-pwp-sst-07",
+      "day": "2017-03-14",
+      "clock": "11:20",
+      "source": "uci",
+      "device": "Wacom tablet (UCI)",
+      "hand": "Right",
+      "uciGroup": "Parkinson's",
+      "note": "Stand-in shaped like a UCI static spiral test from the Parkinson's group. Replace with the converted recording.",
+      "generator": {
+        "durationS": 20,
+        "sampleRateHz": 100,
+        "tremorHz": 5.1,
+        "tremorMm": 1.6
+      }
+    },
+    {
+      "id": "uci-ctl-sst-02",
+      "day": "2017-03-09",
+      "clock": "10:05",
+      "source": "uci",
+      "device": "Wacom tablet (UCI)",
+      "hand": "Right",
+      "uciGroup": "Control",
+      "note": "Stand-in shaped like a UCI static spiral test from the control group. Replace with the converted recording.",
+      "generator": {
+        "durationS": 17,
+        "sampleRateHz": 100,
+        "tremorHz": 8.8,
+        "tremorMm": 0.09
+      }
+    }
+  ]
+}

@@ -88,7 +88,7 @@ Subject-wise 5-fold stratified cross-validation over 61 Parkinson's and 15 contr
 <!-- PROOF:END tests -->
 
 <!-- PROOF:BEGIN latency -->
-`analyzeTrace` on the Parkinson's replay (1810 points): median 1.3 ms over 20 runs in Node on the proof machine.
+`analyzeTrace` on the Parkinson's replay (1810 points): median 2.0 ms over 20 runs in Node on the proof machine.
 <!-- PROOF:END latency -->
 
 <!-- PROOF:BEGIN demo-path -->

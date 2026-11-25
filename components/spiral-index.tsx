@@ -1,18 +1,31 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
+import { EmptyState } from "@/components/route-states";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { STATUS_LABEL, formatSinceDose, type TestSummary } from "@/lib/data";
 
 const STATUS_VARIANT = { baseline: "olive", within: "secondary", past: "bad", replay: "outline" } as const;
 
-/** Every spiral record with a scope filter, a threshold toggle and free-text search. */
+/**
+ * Every spiral record with a scope filter, a threshold toggle and free-text search.
+ * The URL is the one source of truth: ?day= (a diary day or "uci"), ?past=1 and ?q=.
+ * Must render under <Suspense> because it reads useSearchParams.
+ */
 export function SpiralIndex({ rows }: { rows: TestSummary[] }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const scope = params.get("day") ?? "all";
+  const pastOnly = params.get("past") === "1";
+  const query = params.get("q") ?? "";
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const scopes = useMemo(() => {
     const days = Array.from(new Map(rows.filter((r) => r.source === "home").map((r): [string, string] => [r.day, r.dayLabel])).entries());
     return [
@@ -21,9 +34,23 @@ export function SpiralIndex({ rows }: { rows: TestSummary[] }) {
       { key: "uci", label: "UCI replays" },
     ];
   }, [rows]);
-  const [scope, setScope] = useState("all");
-  const [pastOnly, setPastOnly] = useState(false);
-  const [query, setQuery] = useState("");
+
+  // the search box is uncontrolled so typing never waits on the router; when the URL
+  // changes from outside (Clear filters, back button) and the box is not focused, follow it
+  useEffect(() => {
+    const el = inputRef.current;
+    if (el && el.value !== query && document.activeElement !== el) el.value = query;
+  }, [query]);
+
+  const setParams = (updates: Record<string, string | null>) => {
+    const next = new URLSearchParams(params.toString());
+    for (const [k, v] of Object.entries(updates)) {
+      if (v) next.set(k, v);
+      else next.delete(k);
+    }
+    const s = next.toString();
+    router.replace(s ? `${pathname}?${s}` : pathname, { scroll: false });
+  };
 
   const visible = rows.filter((r) => {
     if (scope === "uci" && r.source !== "uci") return false;
@@ -34,29 +61,35 @@ export function SpiralIndex({ rows }: { rows: TestSummary[] }) {
     return [r.clock, r.dayLabel, r.device, r.note, STATUS_LABEL[r.status], r.uciGroup ?? ""].join(" ").toLowerCase().includes(q);
   });
 
-  const reset = () => {
-    setScope("all");
-    setPastOnly(false);
-    setQuery("");
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div role="group" aria-label="Filter by day" className="flex flex-wrap gap-2">
           {scopes.map((s) => (
-            <Button key={s.key} variant="segment" size="sm" aria-pressed={scope === s.key} onClick={() => setScope(s.key)}>
+            <Button
+              key={s.key}
+              variant="segment"
+              size="sm"
+              aria-pressed={scope === s.key}
+              onClick={() => setParams({ day: s.key === "all" ? null : s.key })}
+            >
               {s.label}
             </Button>
           ))}
-          <Button variant="segment" size="sm" aria-pressed={pastOnly} onClick={() => setPastOnly((v) => !v)}>
+          <Button variant="segment" size="sm" aria-pressed={pastOnly} onClick={() => setParams({ past: pastOnly ? null : "1" })}>
             Past threshold only
           </Button>
         </div>
         <label className="relative block w-full lg:w-72">
           <span className="sr-only">Search spirals</span>
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search notes, device, time" className="pl-9" />
+          <Input
+            ref={inputRef}
+            defaultValue={query}
+            onChange={(e) => setParams({ q: e.target.value.trim() ? e.target.value : null })}
+            placeholder="Search notes, device, time"
+            className="pl-9"
+          />
         </label>
       </div>
 
@@ -65,15 +98,12 @@ export function SpiralIndex({ rows }: { rows: TestSummary[] }) {
       </p>
 
       {visible.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="space-y-3 py-10 text-center">
-            <p className="font-display text-lg font-semibold">No spirals match this filter</p>
-            <p className="text-sm text-muted-foreground">Nothing fits &quot;{query || "these filters"}&quot;.</p>
-            <Button variant="outline" size="sm" onClick={reset}>
-              Clear filter
-            </Button>
-          </CardContent>
-        </Card>
+        <EmptyState
+          title="No spirals match this filter"
+          body={`Nothing fits "${query || "these filters"}".`}
+          href="/spirals"
+          cta="Clear filters"
+        />
       ) : (
         <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
           {visible.map((r) => (

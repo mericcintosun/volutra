@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Eraser, Play, Save } from "lucide-react";
-import { ResultCard } from "@/components/result-card";
+import { Eraser, Layers, Play, Save } from "lucide-react";
+import { ResultCard, type CompareState } from "@/components/result-card";
 import { SpiralPad } from "@/components/spiral-pad";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { hashTrace } from "@/lib/cache";
-import { saveLocalTestOnce } from "@/lib/local-diary";
-import { analyzeTrace, type SpiralAnalysis, type TracePoint } from "@/lib/tremor";
+import { readLastSpectrum, saveLocalTestOnce, writeLastSpectrum } from "@/lib/local-diary";
+import { analyzeTrace, type SpectrumBin, type SpiralAnalysis, type TracePoint } from "@/lib/tremor";
 
 type Phase = "idle" | "running" | "done" | "short";
 
@@ -20,10 +20,13 @@ interface SpiralSessionProps {
   /** replay only: where the points came from (converted UCI 395 file or a stand-in) */
   sourceLine?: string;
   initial?: SpiralAnalysis | null;
+  /** replay only: drawn when this device holds no drawing (the UCI control recording) */
+  fallbackCompare?: { spectrum: SpectrumBin[]; peakHz: number; label: string };
 }
 
 /** The core screen: draw (or replay) a spiral, then read the analysis. */
-export function SpiralSession({ mode, trace, sourceLine, initial = null }: SpiralSessionProps) {
+export function SpiralSession({ mode, trace, sourceLine, initial = null, fallbackCompare }: SpiralSessionProps) {
+  const [compare, setCompare] = useState<CompareState>("idle");
   const [analysis, setAnalysis] = useState<SpiralAnalysis | null>(initial);
   const [phase, setPhase] = useState<Phase>(initial ? "done" : "idle");
   const [playToken, setPlayToken] = useState(0);
@@ -38,9 +41,37 @@ export function SpiralSession({ mode, trace, sourceLine, initial = null }: Spira
       setPhase("short");
       return;
     }
+    // capture only: keep this drawing's spectrum so a replay can compare against it (Save not needed)
+    if (mode === "capture") writeLastSpectrum(result);
     setTraceKey(points);
     setAnalysis(result);
     setPhase("done");
+  };
+
+  const toggleCompare = () => {
+    if (compare !== "idle") {
+      setCompare("idle");
+      return;
+    }
+    setCompare("loading");
+    // let the loading line paint before the storage read
+    window.setTimeout(() => {
+      try {
+        const last = readLastSpectrum();
+        if (last) {
+          setCompare({
+            kind: "device",
+            data: { spectrum: last.spectrum, peakHz: last.peakHz, amplitudeMm: last.amplitudeMm, label: `Your drawing at ${last.clock}` },
+          });
+        } else if (fallbackCompare) {
+          setCompare({ kind: "control", data: fallbackCompare });
+        } else {
+          setCompare("empty");
+        }
+      } catch {
+        setCompare("error");
+      }
+    }, 0);
   };
 
   const handleSave = () => {
@@ -92,14 +123,24 @@ export function SpiralSession({ mode, trace, sourceLine, initial = null }: Spira
           <p className="max-w-[44ch] text-sm text-muted-foreground" aria-live="polite">
             {status[phase]}
           </p>
-          {sourceLine && <p className="max-w-[44ch] text-xs text-muted-foreground">{sourceLine}</p>}
+          {sourceLine && (
+            <p className="max-w-full break-all text-xs text-muted-foreground sm:max-w-[44ch] sm:break-words" title={sourceLine}>
+              {sourceLine}
+            </p>
+          )}
         </CardContent>
         <CardFooter className="flex-wrap">
           {mode === "replay" ? (
-            <Button onClick={() => setPlayToken((n) => n + 1)} disabled={phase === "running"}>
-              <Play aria-hidden />
-              {playToken === 0 ? "Replay recording" : "Replay again"}
-            </Button>
+            <>
+              <Button onClick={() => setPlayToken((n) => n + 1)} disabled={phase === "running"}>
+                <Play aria-hidden />
+                {playToken === 0 ? "Replay recording" : "Replay again"}
+              </Button>
+              <Button variant="outline" onClick={toggleCompare} disabled={phase !== "done"} aria-pressed={compare !== "idle"}>
+                <Layers aria-hidden />
+                {compare === "idle" ? "Compare with my last drawing" : "Hide comparison"}
+              </Button>
+            </>
           ) : (
             <>
               <Button variant="outline" onClick={reset} disabled={phase === "idle"}>
@@ -121,7 +162,11 @@ export function SpiralSession({ mode, trace, sourceLine, initial = null }: Spira
       </Card>
 
       {analysis ? (
-        <ResultCard analysis={analysis} origin={mode === "capture" ? "Your drawing:" : "This recording:"} />
+        <ResultCard
+          analysis={analysis}
+          origin={mode === "capture" ? "Your drawing:" : "This recording:"}
+          compareState={mode === "replay" ? compare : "idle"}
+        />
       ) : (
         <Card className="border-dashed">
           <CardContent className="space-y-2 py-10 text-center md:py-12">

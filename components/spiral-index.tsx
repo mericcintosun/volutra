@@ -69,14 +69,13 @@ export function SpiralIndex({ rows }: { rows: TestSummary[] }) {
             <Button
               key={s.key}
               variant="segment"
-              size="sm"
               aria-pressed={scope === s.key}
               onClick={() => setParams({ day: s.key === "all" ? null : s.key })}
             >
               {s.label}
             </Button>
           ))}
-          <Button variant="segment" size="sm" aria-pressed={pastOnly} onClick={() => setParams({ past: pastOnly ? null : "1" })}>
+          <Button variant="segment" aria-pressed={pastOnly} onClick={() => setParams({ past: pastOnly ? null : "1" })}>
             Past threshold only
           </Button>
         </div>
@@ -117,7 +116,9 @@ export function SpiralIndex({ rows }: { rows: TestSummary[] }) {
                   <span className="text-xs text-muted-foreground">{r.source === "uci" ? r.uciGroup : r.dayLabel}</span>
                 </span>
                 <span className="min-w-0">
-                  <span className="block truncate text-sm">{r.note}</span>
+                  <span className="block truncate text-sm" title={r.note}>
+                    {r.note}
+                  </span>
                   <span className="text-xs text-muted-foreground">
                     {r.device}
                     {r.minutesSinceDose !== null && `, ${formatSinceDose(r.minutesSinceDose)} after the dose`}

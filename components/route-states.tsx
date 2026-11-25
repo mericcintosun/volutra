@@ -57,7 +57,7 @@ export function EmptyState({ title, body, href, cta }: EmptyStateProps) {
     <div className="space-y-3 rounded-md border border-dashed border-border px-6 py-10 text-center">
       <p className="font-display text-lg font-semibold">{title}</p>
       <p className="mx-auto max-w-[52ch] text-sm text-muted-foreground">{body}</p>
-      <Button asChild variant="outline" size="sm">
+      <Button asChild variant="outline">
         <Link href={href}>{cta}</Link>
       </Button>
     </div>

@@ -47,7 +47,7 @@ export function AppRail() {
               href={href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                "flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors md:justify-start",
                 active ? "bg-muted font-semibold text-foreground" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
               )}
             >
@@ -66,7 +66,15 @@ export function AppRail() {
       </nav>
 
       <p className="hidden px-6 text-xs leading-relaxed text-muted-foreground md:absolute md:bottom-6 md:block">
-        A measurement diary to share with your neurologist. Not a diagnostic tool. Nothing leaves this browser.
+        A measurement diary to share with your neurologist. Not a diagnostic tool. Nothing leaves this browser.{" "}
+        <a
+          href="https://github.com/mericcintosun/volutra"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="kiln-underline text-foreground"
+        >
+          Source on GitHub
+        </a>
       </p>
     </aside>
   );

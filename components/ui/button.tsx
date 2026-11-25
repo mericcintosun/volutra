@@ -21,10 +21,11 @@ const buttonVariants = cva(
           "border border-border bg-card text-muted-foreground hover:text-foreground aria-pressed:border-primary aria-pressed:bg-muted aria-pressed:text-foreground",
       },
       size: {
-        default: "h-10 px-4 py-2",
+        default: "h-11 px-4 py-2",
+        // sm is for non-demo uses only; every control on the demo path is 44px or taller
         sm: "h-8 px-3 text-xs",
         lg: "h-11 px-7 text-base",
-        icon: "h-10 w-10",
+        icon: "h-11 w-11",
       },
     },
     defaultVariants: { variant: "default", size: "default" },

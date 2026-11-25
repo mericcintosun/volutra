@@ -213,7 +213,7 @@ export function DoseTimeline({ days, initialDay }: { days: TimelineDay[]; initia
       <div className="flex flex-col gap-4 print:hidden md:flex-row md:items-end md:justify-between">
         <div role="group" aria-label="Pick a diary day" className="flex flex-wrap gap-2">
           {allDays.map((d) => (
-            <Button key={d.day} variant="segment" size="sm" aria-pressed={d.day === day.day} onClick={() => selectDay(d.day)}>
+            <Button key={d.day} variant="segment" aria-pressed={d.day === day.day} onClick={() => selectDay(d.day)}>
               {d.label}
             </Button>
           ))}
@@ -339,7 +339,7 @@ export function DoseTimeline({ days, initialDay }: { days: TimelineDay[]; initia
               <p className="text-xs text-muted-foreground">
                 Your own readings and dose times are kept in this browser only. Nothing leaves the device.
               </p>
-              <Button variant="outline" size="sm" onClick={clearDevice}>
+              <Button variant="outline" onClick={clearDevice}>
                 <Trash2 aria-hidden />
                 Clear this device
               </Button>

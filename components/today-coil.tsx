@@ -83,7 +83,6 @@ export function TodayCoil({ tests, thresholdMm }: { tests: TestSummary[]; thresh
           <Button
             key={t.id}
             variant="segment"
-            size="sm"
             aria-pressed={t.id === selectedId}
             onClick={() => setSelectedId(t.id)}
           >

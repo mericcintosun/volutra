@@ -20,5 +20,8 @@ export const CV_FOLDS = 5;
 export const TRAIN_ITERATIONS = 4000;
 export const TRAIN_LEARNING_RATE = 0.05;
 
+/** The canonical deploy, used as metadataBase for absolute OG and Twitter image URLs. A literal, not an env read. */
+export const SITE_URL = "https://volutra.vercel.app";
+
 /** Test ID of the static spiral test in the UCI 395 files (1 is dynamic, 2 is the stability test). */
 export const UCI_TEST_ID_STATIC = 0;

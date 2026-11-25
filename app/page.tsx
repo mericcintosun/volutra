@@ -66,8 +66,17 @@ export default function Overview() {
           {tests.length} spirals since the {today.doseClock} dose
         </h1>
         <p className="max-w-[68ch] text-muted-foreground">
-          Every spiral is a 20-second tremor reading. Volutra lines them up against the time of your levodopa dose so the
-          afternoon dip stops being a feeling and becomes a time on a chart.
+          Volutra is a tremor diary for people with Parkinson&apos;s on levodopa, the carers who keep their on/off notes, and
+          the neurologist who adjusts the dose. Every spiral is a 20-second tremor reading, measured in this browser and lined
+          up against the time of the dose, so the afternoon dip stops being a feeling and becomes a time on a chart.
+        </p>
+        <p className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+          <Link href="/spirals/new" className="kiln-underline">
+            Draw your first spiral
+          </Link>
+          <Link href="/spirals/uci-pwp-sst-07" className="kiln-underline">
+            Replay a real patient&apos;s tablet spiral
+          </Link>
         </p>
       </header>
 

@@ -274,6 +274,66 @@ None, agent has no shell.
 ### Next best step (Phase 5)
 Frontend pass: kit signatures 2 (the coil reacts to the live capture, which `volutra:last-spectrum:v1` can feed) and 3 (a step-linked camera move), then visual polish from the live screenshots at 360, 768 and 1280 px.
 
+## Phase 5: kiln shell polish, a coil that follows the measurement, submission package
+
+### Goal
+Make DEMO steps 1 to 4 presentation grade: the coil above the fold on a phone, the coil rebuilt from your own capture and warmed by amplitude against today's seeded line, and the replay ending with the camera easing from "As drawn" to "Side relief". Then package the submission (README, SUBMISSION.md, LICENSE, screenshot list).
+
+### Status
+- **Slice 0: done.** `.farm-delta.md` written before any other edit: 10 diagnosis items, 22 change rows (13 A, 9 B), 2 kept rows, final grep counts.
+- **Slice A: done.** One-sentence welcome with one text link to `/spirals/uci-pwp-sst-07` (`app/page.tsx:87-92`). "Draw your first spiral" and the verdict-card duplicate are gone. Section ids `today-coil`, `verdict` and `method` are at `app/page.tsx:95,108,146`. Rail anchors with `IntersectionObserver` (`components/app-rail.tsx:38`) and `aria-current="location"` (`:55`) show on md and up while on `/`. The caption sits under the frame next to the view buttons (`components/coil-stage.tsx:94`). Lights are raised to ambient 2.1 and key 2.2 so the DEEP tile reads brown (`components/coil-canvas.tsx:181-182`). Views are pulled back to fov 40 (`:30-33`). The footer with the repo and hackathon links shows on every width (`app/page.tsx:16-31`). The method is now one sentence plus a 4-item `<ol>` in `components/ui/disclosure.tsx`. Empty states name the rail action instead of linking to it. The type scale is one h1 size and h2 `text-xl`, and body copy is capped at 65ch.
+- **Slice B1: done.** `CoilStage` (`components/coil-stage.tsx`) holds the dynamic import (`ssr: false`), `StageBoundary`, the WebGL check and the `SceneSlot n={1}` fallback. Both the overview and the session use it. `warmth` is in `CoilCanvasProps` (`components/coil-canvas.tsx:155`). The session builds `coilPath(traceKey)` after a capture (`components/spiral-session.tsx:50`). `/spirals/new` gets `thresholdMm` from `assessDay` on the newest seed day (`app/spirals/[id]/page.tsx`, `todayThresholdMm`). An HTML line under the coil states the amplitude against the line. The overview passes warmth too.
+- **Slice B2: done.** `CameraRig` (`components/coil-canvas.tsx:87`) does exponential damping (k = 6.5/s, about 1 percent left after 700 ms) with `invalidate()` each frame. It snaps under `prefers-reduced-motion: reduce`, and grabbing the orbit cancels a tween. The step link is `stepView` at `components/spiral-session.tsx:44`: drawn while idle or running, relief when done. The "As drawn" and "Side relief" segment buttons have `aria-pressed` and appear on both the overview and the session.
+- **Slice B3: done with one deviation.** Five slots: n=1 in `components/coil-stage.tsx` (the coil fallback on `/` and in the session), n=2 in `app/spirals/page.tsx` (960x720, unchanged), n=3 in `app/activity/page.tsx`, n=4 in `components/spiral-session.tsx` (640x640, shown until a reading exists) and n=5 in `app/activity/page.tsx` (1200x400). Entrances only run under `prefers-reduced-motion: no-preference` (`app/globals.css`). Deviation: the `/activity` readings table and event history are **not** folded behind `<details>`. A closed `<details>` drops the table from the printout (DEMO step 7), and "Clear this device" (the reset step) lives in the history card.
+- **Slice C: done.** README truth pass with the mermaid diagram, try-it block, addresses table, stack from package.json, licence line and AI-use section. Also `SUBMISSION.md`, `LICENSE`, `docs/SCREENSHOTS.md` and `.env.example` (comment corrected; both keys listed). `.gitignore` already had `.env*` and `!.env.example`.
+
+### Decisions
+- **Licence:** MIT, "Copyright (c) 2026 Volutra contributors". The builder may change it before submitting.
+- **View names:** "As drawn" (`drawn`: camera at [0, 10.4, 0.01], straight down like the pad) and "Side relief" (`relief`: camera at [0, 3.1, 8.4], target [0, 0.25, 0]).
+- **Warmth formula:** `warmth = clamp(amplitudeMm / thresholdMm, 0, 1)`, with `thresholdMm` from `assessDay` on the newest seed day (0.64 mm on Tue 24 Nov). The base colour is `olive.lerp(clay, warmth)`. Per-segment heat goes toward BAD only when warmth reaches 1 (at or past the line); below it, heat stays on the base colour. Replays pass no warmth and keep the old clay plus BAD heat, because comparing a UCI tablet file with R.'s diary line would mean nothing.
+- **Step link:** a manual view pick overrides the step until the next step (replay start, capture start, a new result, or Clear).
+- **Scene 5 placement:** the print button lives in the `DoseTimeline` toolbar at the top, so slot 5 is the closing panel at the end of `/activity`, and its sentence points to that button.
+- **Overview verdict:** cut to one sentence plus the yesterday line and one link, which follows the "one sentence plus a visual" rule.
+
+### Failed attempts
+None.
+
+### Files changed
+Created: `components/coil-stage.tsx`, `components/ui/disclosure.tsx`, `public/illustrations/scene-4.svg`, `public/illustrations/scene-5.svg`, `SUBMISSION.md`, `LICENSE`, `docs/SCREENSHOTS.md`, `.farm-delta.md`, `.farm-commits.json`.
+Edited: `app/page.tsx`, `app/layout.tsx` (mobile `py-6`), `app/globals.css`, `app/loading.tsx`, `app/not-found.tsx`, `app/spirals/page.tsx`, `app/spirals/[id]/page.tsx`, `app/activity/page.tsx`, `components/app-rail.tsx`, `components/coil-canvas.tsx`, `components/today-coil.tsx`, `components/spiral-session.tsx`, `components/route-states.tsx`, `components/dose-timeline.tsx`, `README.md`, `.env.example`, `IDENTITY.md` (one amendment line only), `HANDOFF.md`.
+
+### Commands run
+None, agent has no shell.
+
+### Unmet or unverified items (honest list)
+- Unverified until the runner: `npm run build` (strict types for the new `CameraRig`, `OrbitControls onStart`, the `useThree((s) => s.controls)` cast and the `EmptyState` `body: ReactNode`), `npm test`, `npm run proof`, and every visual check. The fold claim (coil within the first 360 to 390 px phone screen) is estimated from the layout, not measured. The tile colour after the light change is also untested; if it still reads too dark or too light, tune `ambientLight` at `components/coil-canvas.tsx:181`.
+- Kit file check: `components/today-coil.tsx` and `components/spiral-session.tsx` start with `"use client"` but do not import `@react-three/fiber` themselves. They reach it through `coil-stage.tsx`, which loads `coil-canvas.tsx` (the only fiber importer) through `next/dynamic`, as the kit rule asks.
+- `/activity` table and history are not folded (see Status B3).
+- The grep gate hits two strings the spec itself requires. `SUBMISSION.md:6` matches `video` inside the verbatim Turkish requirement quote. `app/page.tsx:26` matches the banned word "empower" inside the event name "ML Empowerment Build Challenge 4.0".
+- README contains `-->` in the mermaid edges and in the untouched PROOF markers. That is syntax, not a dash in prose.
+- h1 and h2 get Zilla Slab from the `h1, h2` rule in `app/globals.css`, and every h1 and h2 in app and components now also carries `font-display` explicitly.
+
+### Open questions
+- Should the overview default to "Side relief" once the coil has loaded, for a stronger first frame? It defaults to "As drawn" today, to match the pad.
+
+### Scene slots (all five are SVG fallbacks until `public/brand/scene-N.png` is uploaded)
+- n=1: `/` coil fallback (and the session coil fallback), `public/illustrations/scene-1.svg`, 960x640
+- n=2: `/spirals` side card, `scene-2.svg`, 960x720
+- n=3: `/activity` "Why the dose time matters", `scene-3.svg`, 960x640
+- n=4: `/spirals/new` idle pad, beside the pad until a reading exists, `scene-4.svg`, 640x640
+- n=5: `/activity` closing panel "This page goes to the next appointment", `scene-5.svg`, 1200x400
+
+### Next best step (Phase 6)
+Apply the judge panel findings, starting from the runner's 360, 768 and 1280 px screenshots against the diagnosis list in `.farm-delta.md`.
+
+### Manual submit checklist
+- [ ] Confirm student eligibility for every team member.
+- [ ] Team members and roles on the Devpost form.
+- [ ] Record and paste the demo video link.
+- [ ] Upload screenshots per `docs/SCREENSHOTS.md`.
+- [ ] Claim Adaption credits by hand if wanted.
+- [ ] Submit before 1 Dec 2026 21:00 PT.
+
 ## 5. Definition of done
 
 - Deployed on Vercel at https://volutra.vercel.app and the README demo link works.

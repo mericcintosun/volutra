@@ -1,8 +1,23 @@
 # Volutra
 
-A person with Parkinson's draws a spiral on a phone or laptop in about 20 seconds. Volutra measures the frequency and strength of their tremor and shows, on one chart, the hour each day when their medication starts to wear off.
+A person with Parkinson's draws a spiral on a phone or laptop in about 20 seconds, and Volutra measures the frequency and strength of their tremor in the browser. Readings line up against the dose time, so the hour each day when levodopa starts to wear off becomes a time on one chart that can go to the neurologist.
 
-> Live demo: https://volutra.vercel.app
+Live: https://volutra.vercel.app
+
+Start at DEMO step 1: open `/`.
+
+## Try it in 60 seconds
+
+1. `/` shows today's six seeded spirals since the 08:00 dose as a clay coil. Pick 09:05, then 14:40: the coil is rebuilt from that drawing and runs hotter at 14:40, past today's line.
+2. `/spirals/new`: draw a spiral with a finger, stylus or mouse. The result card gives the dominant frequency in Hz, the amplitude in mm and the spectrum, and your own coil turns on its side, coloured by your amplitude against today's 0.64 mm line.
+3. `/spirals/uci-pwp-sst-07`: press Replay. A real 2017 tablet spiral from UCI 395 redraws at its own speed, the spectrum peaks near 5 Hz, and the camera eases from "As drawn" to "Side relief". Then press "Compare with my last drawing" to put your step 2 spectrum on the same chart.
+4. `/activity`: the 08:00 dose, the 14:40 wearing-off band and the readings. Change the dose time and every mark is recomputed; print one A4 page for the neurologist.
+
+| Address | Value |
+| --- | --- |
+| Live demo | https://volutra.vercel.app |
+
+Recordings on the live URL: the site is deployed with `ADAPTER_MODE=real` and the committed proof run, so the line under the pad reads "Real recording: UCI 395 subject file ...". If the real adapter cannot load, the same line reads "Sample data: ..." and the `/spirals` header says stand-ins are shown.
 
 ## The problem
 
@@ -22,13 +37,29 @@ Volutra turns a familiar clinical test, the Archimedes spiral, into a reading yo
 
 Nothing is uploaded. All math runs in the tab and the diary lives in `localStorage`.
 
+## How it fits together
+
+```mermaid
+flowchart LR
+  pad["components/spiral-pad.tsx<br/>pointer capture"] --> tremor["lib/tremor.ts<br/>unwrap, fit, FFT, coilPath"]
+  tremor --> features["lib/features.ts<br/>three features"]
+  features --> model["lib/model.ts<br/>logistic regression"]
+  weights["lib/model-weights.json"] --> model
+  tremor --> assess["lib/data.ts assessDay<br/>baseline and 1.5x line"]
+  assess --> coil["components/coil-canvas.tsx<br/>warmth and camera views"]
+  tremor --> coil
+  tremor --> diary["lib/local-diary.ts<br/>localStorage"]
+  convert["scripts/convert-uci.ts<br/>UCI 395 to data/uci"] --> train["scripts/train-model.ts<br/>subject-wise CV"]
+  train --> weights
+```
+
 ## Key features
 
 - **Spiral pad with live analysis.** Dominant frequency, band amplitude, spiral fit and the full spectrum within a second of lifting the pen. A warning appears if the device reports fewer than 30 points per second.
-- **Recording replay.** Any record redraws itself at the speed it was drawn, then the same pipeline runs again on those points.
+- **A coil that follows the measurement.** After a drawing, the 3D coil is rebuilt from your own points and its colour runs from olive to clay by your amplitude against today's seeded line; red heat appears only at or past the line.
+- **Recording replay with a step-linked camera.** Any record redraws itself at the speed it was drawn. The coil is seen from above while it replays and turns to a side view when the result lands, so the tremor stands up as relief. "As drawn" and "Side relief" buttons do the same by hand.
 - **Compare with your own drawing.** On a replay, one press draws the spectrum of the last spiral drawn on this device as an olive line on the same chart as the recording. With no drawing yet, the UCI control recording is drawn instead and labelled.
 - **Dose day timeline.** Amplitude against clock time, the baseline, the 1.5x threshold, a shaded wearing-off band and an event history. Change the dose time and every mark is recomputed.
-- **3D coil.** Today's spirals rendered as a fired-clay coil (React Three Fiber). Pick a time and the coil rebuilds from that drawing, its tremor exaggerated three times.
 - **Doctor printout and CSV.** Print styles flip the palette to ink on paper.
 
 ## How it uses machine learning
@@ -57,7 +88,7 @@ Subject-wise 5-fold stratified cross-validation over 61 Parkinson's and 15 contr
 <!-- PROOF:END tests -->
 
 <!-- PROOF:BEGIN latency -->
-`analyzeTrace` on the Parkinson's replay (1810 points): median 1.9 ms over 20 runs in Node on the proof machine.
+`analyzeTrace` on the Parkinson's replay (1810 points): median 1.4 ms over 20 runs in Node on the proof machine.
 <!-- PROOF:END latency -->
 
 <!-- PROOF:BEGIN demo-path -->
@@ -74,15 +105,15 @@ Seed dose days on 2026-11-25, second dose window applied: 24 Nov: wearing-off at
 
 ## Technologies
 
-- Next.js 15 (App Router), TypeScript in strict mode, Tailwind CSS v4
-- Canvas 2D and Pointer Events with `getCoalescedEvents()`
-- Hand-written signal processing: polar unwrap, least-squares fit, linear resampling, Hann window, radix-2 FFT
-- Logistic regression in plain TypeScript, trained by a Node script with subject-wise cross-validation
-- zod for checking route ids, the converted recordings and the weights file
+From `package.json`:
+
+- Next.js 15 (App Router), React 19, TypeScript 5 in strict mode, Tailwind CSS 4
+- three 0.187, @react-three/fiber 9 and @react-three/drei 10 for the 3D coil
+- zod 3 for checking route ids, the converted recordings, the weights file and every localStorage read
+- lucide-react icons and Radix Slot (`@radix-ui/react-slot`) for the button primitive
 - tsx to run the conversion, training, proof and test scripts; tests use `node:test`
-- three.js with React Three Fiber and drei for the 3D coil
-- SVG charts, `localStorage`, print CSS
-- Deployed on Vercel
+
+Written in this repo, with no library: the polar unwrap, least-squares fit, resampling, Hann window and radix-2 FFT (`lib/tremor.ts`), the logistic regression and its training loop, the SVG charts, Canvas 2D drawing with Pointer Events, and the print CSS. Deployed on Vercel.
 
 ## Target users
 
@@ -105,17 +136,17 @@ This event has no sponsor bounty; one submission enters both ranked tracks autom
 | 1st place | For the best project! | 1 | none stated | lib/tremor.ts, lib/model.ts, scripts/train-model.ts | 2, 3, 4 |
 | Top 10 Finalists | For the top 10 finalists - Certificate awarded | 10 | none stated | same as above | 2, 3, 4 |
 
-Submission checklist: `DELIVERY.md`. Security notes: `SECURITY.md`. Source: https://github.com/mericcintosun/volutra
+"Adaption credits for everyone" ("Use the following link to claim $1000 in Adaption credits!") is a credit link, not a judged track, and is not targeted.
+
+Submission checklist: `DELIVERY.md` and `SUBMISSION.md`. Security notes: `SECURITY.md`. Source: https://github.com/mericcintosun/volutra
 
 ## Quickstart
 
 ```bash
 npm install
-npm run dev
-# open http://localhost:3000
-
-npm test         # core pipeline tests (node:test)
-npm run proof    # download UCI 395, convert the replays, train, rewrite the proof blocks above
+npm run dev         # http://localhost:3000
+npm test            # core pipeline tests (node:test)
+npm run proof       # download UCI 395, convert the replays, train, rewrite the proof blocks above
 npm run demo:reset  # put the seed diary back to the demo start state and check the real data is in place
 ```
 
@@ -140,6 +171,8 @@ Routes:
 
 ## AI use
 
-> We used AI coding assistants for scaffolding and boilerplate. Architecture, product decisions, and final code review are our own.
+The hackathon rules state no AI-use policy. AI coding assistants helped write this code. The only model inside the product is the in-repo logistic regression: trained by `scripts/train-model.ts`, with its weights in `lib/model-weights.json`, run in the browser. No hosted model is called at any point.
 
-(Adjust this section to the hackathon's disclosure rules before submitting.)
+## License
+
+Code: MIT (LICENSE). Data: UCI Parkinson Disease Spiral Drawings Using Digitized Graphics Tablet, CC BY 4.0.
